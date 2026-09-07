@@ -4,7 +4,7 @@ var WidgetMetadata = {
     description: "获取 MissAV 推荐 (婉儿定制版)",
     author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "2.1.0",
+    version: "2.2.0",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
@@ -662,7 +662,7 @@ async function searchVideos(params = {}) {
     const sortBy = params.sort_by;
     
     if (!keyword) {
-        return [createPlaceholderItem("请输入搜索关键词")];
+        return [];
     }
     
     const isVideoCode = /^[A-Za-z]+-?\d+$/i.test(keyword);
@@ -808,32 +808,17 @@ async function fetchVideoList(url) {
         });
 
         if (!response || !response.data || response.data.length < 10000) {
-            return [createPlaceholderItem("网络请求失败或数据异常")];
+            return [];
         }
 
         return parseVideoList(response.data);
         
     } catch (error) {
-        return [createPlaceholderItem("访问失败，可能已被风控")];
+        return [];
     }
 }
 
-function createPlaceholderItem(message = "已被风控，请稍后重试") {
-    return {
-        id: "content-placeholder",
-        type: "placeholder",
-        title: "🚫 " + message,
-        backdropPath: "https://via.placeholder.com/400x225/FF6B6B/FFFFFF?text=%E5%B7%B2%E8%A2%AB%E9%A3%8E%E6%8E%A7",
-        mediaType: "placeholder",
-        duration: 0,
-        durationText: "⚠️ 访问受限",
-        previewUrl: "",
-        videoUrl: "",
-        link: "",
-        description: "🔒 " + message + "\n\n💡 可能的解决方案：\n• 等待一段时间后重新尝试\n• 检查网络连接\n• 更换网络环境\n• 稍后再试",
-        playerType: "none"
-    };
-}
+
 
 function parseVideoList(html) {
     const $ = Widget.html.load(html);
@@ -871,25 +856,21 @@ function parseVideoList(html) {
                 }
                 
                 videos.push({
-                    id: fullVideoUrl,
+                    id: `${index}|${fullVideoUrl}`,
                     type: "url",
                     title: title || `${videoCode}`,
+                    imgSrc: horizontalCoverUrl,
                     backdropPath: horizontalCoverUrl,
                     mediaType: "movie",
-                    duration: 0,
-                    durationText: "",
-                    previewUrl: "",
-                    videoUrl: "",
                     link: fullVideoUrl,
-                    description: `番号: ${videoCode}`,
-                    playerType: "system"
+                    description: `番号: ${videoCode}`
                 });
             }
         }
     });
     
     if (videos.length === 0) {
-        return [createPlaceholderItem()];
+        return [];
     }
     
     return videos;
@@ -984,23 +965,19 @@ async function loadDetail(link) {
         
         return {
             id: link,
-            type: "detail",
+            type: "url",
             videoUrl: videoUrl || link,
             title: title || `${videoCode}`,
             description: `番号: ${videoCode}`,
-            posterPath: "",
+            imgSrc: `https://fourhoi.com/${videoId}/cover-t.jpg`,
             backdropPath: `https://fourhoi.com/${videoId}/cover-t.jpg`,
             mediaType: "movie",
-            duration: 0,
-            durationText: "",
-            previewUrl: "",
-            playerType: "system",
             link: link,
-            customHeaders: videoUrl ? {
+            customHeaders: {
                 "Referer": "https://missav.ai/",
                 "Origin": "https://missav.ai",
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15"
-            } : undefined
+            }
         };
         
     } catch (error) {
