@@ -825,8 +825,7 @@ async function fetchVideoList(url) {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Cache-Control": "no-cache",
+                                "Cache-Control": "no-cache",
                 "Pragma": "no-cache",
                 "Sec-Fetch-Dest": "document",
                 "Sec-Fetch-Mode": "navigate",
@@ -851,20 +850,19 @@ async function fetchVideoList(url) {
     }
 }
 
-function createPlaceholderItem(message = "已被风控，请稍后重试") {
+function createPlaceholderItem(message = "暂无内容或访问受限") {
     return {
-        id: "content-placeholder",
-        type: "placeholder",
-        title: "🚫 " + message,
-        backdropPath: "https://via.placeholder.com/400x225/FF6B6B/FFFFFF?text=%E5%B7%B2%E8%A2%AB%E9%A3%8E%E6%8E%A7",
-        mediaType: "placeholder",
+        id: "https://missav.fans/",
+        type: "url",
+        title: "⚠️ " + message,
+        backdropPath: "",
+        mediaType: "movie",
         duration: 0,
-        durationText: "⚠️ 访问受限",
+        durationText: "",
         previewUrl: "",
         videoUrl: "",
-        link: "",
-        description: "🔒 " + message + "\n\n💡 可能的解决方案：\n• 等待一段时间后重新尝试\n• 检查网络连接\n• 更换网络环境\n• 稍后再试",
-        playerType: "none"
+        link: "https://missav.fans/",
+        description: message
     };
 }
 
@@ -922,7 +920,7 @@ function parseVideoList(html) {
     });
     
     if (videos.length === 0) {
-        return [createPlaceholderItem()];
+        return [];
     }
     
     return videos;
@@ -952,8 +950,7 @@ async function loadDetail(link) {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Cache-Control": "no-cache",
+                                "Cache-Control": "no-cache",
                 "Pragma": "no-cache",
                 "Sec-Fetch-Dest": "document",
                 "Sec-Fetch-Mode": "navigate",
