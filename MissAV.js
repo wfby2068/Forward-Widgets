@@ -1,10 +1,10 @@
 var WidgetMetadata = {
     id: "ti.bemarkt.missav",
     title: "MissAV",
-    description: "获取 MissAV 推荐",
-    author: "Butterfly",
+    description: "获取 MissAV 推荐 (婉儿定制版)",
+    author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "1.0.0",
+    version: "2.0.0",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
