@@ -8,25 +8,7 @@ var WidgetMetadata = {
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
-        {
-                    name: "sort_by",
-                    title: "排序",
-                    type: "enumeration",
-                    description: "排序方式",
-                    value: "released_at",
-                    enumOptions: [
-                        { title: "发行日期", value: "released_at" },
-                        { title: "最近更新", value: "published_at" },
-                        { title: "收藏数", value: "saved" },
-                        { title: "今日浏览数", value: "today_views" },
-                        { title: "本周浏览数", value: "weekly_views" },
-                        { title: "本月浏览数", value: "monthly_views" },
-                        { title: "总浏览数", value: "views" }
-                    ]
-                },
-                { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
-            ]
-        },
+
         {
             title: "今日热门",
             description: "今日热门影片",
@@ -836,19 +818,20 @@ async function fetchVideoList(url) {
     }
 }
 
-function createPlaceholderItem(message = "暂无内容或访问受限") {
+function createPlaceholderItem(message = "已被风控，请稍后重试") {
     return {
-        id: "https://missav.fans/",
-        type: "url",
-        title: "⚠️ " + message,
-        backdropPath: "",
-        mediaType: "movie",
+        id: "content-placeholder",
+        type: "placeholder",
+        title: "🚫 " + message,
+        backdropPath: "https://via.placeholder.com/400x225/FF6B6B/FFFFFF?text=%E5%B7%B2%E8%A2%AB%E9%A3%8E%E6%8E%A7",
+        mediaType: "placeholder",
         duration: 0,
-        durationText: "",
+        durationText: "⚠️ 访问受限",
         previewUrl: "",
         videoUrl: "",
-        link: "https://missav.fans/",
-        description: message
+        link: "",
+        description: "🔒 " + message + "\n\n💡 可能的解决方案：\n• 等待一段时间后重新尝试\n• 检查网络连接\n• 更换网络环境\n• 稍后再试",
+        playerType: "none"
     };
 }
 
@@ -906,7 +889,7 @@ function parseVideoList(html) {
     });
     
     if (videos.length === 0) {
-        return [];
+        return [createPlaceholderItem()];
     }
     
     return videos;
