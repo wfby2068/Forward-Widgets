@@ -1,10 +1,10 @@
 var WidgetMetadata = {
     id: "ti.bemarkt.missav",
     title: "MissAV",
-    description: "获取 MissAV 推荐 (婉儿定制版 带时长显示)",
+    description: "获取 MissAV 推荐 (婉儿定制版 修复详情页时长消失)",
     author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "2.3.0",
+    version: "2.3.1",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
@@ -910,9 +910,9 @@ async function loadDetail(link) {
         const response = await Widget.http.get(link, {
             headers: {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                                "Cache-Control": "no-cache",
+                "Cache-Control": "no-cache",
                 "Pragma": "no-cache",
                 "Sec-Fetch-Dest": "document",
                 "Sec-Fetch-Mode": "navigate",
@@ -932,22 +932,19 @@ async function loadDetail(link) {
         if (!response || !response.data || response.data.includes('Just a moment') || response.data.length < 50000) {
             return {
                 id: link,
-                type: "detail",
+                type: "url",
                 videoUrl: link,
                 title: `${videoCode}`,
                 description: `番号: ${videoCode}`,
-                posterPath: "",
+                imgSrc: `https://fourhoi.com/${videoId}/cover-t.jpg`,
                 backdropPath: `https://fourhoi.com/${videoId}/cover-t.jpg`,
                 mediaType: "movie",
-                duration: 0,
-                durationText: "",
-                previewUrl: "",
-                playerType: "system",
                 link: link
             };
         }
 
         const $ = Widget.html.load(response.data);
+        const html = response.data;
         
         let title = $('meta[property="og:title"]').attr('content') || '';
         if (!title) {
@@ -955,6 +952,19 @@ async function loadDetail(link) {
         }
         if (!title) {
             title = $('title').text().replace(/\s*-\s*MissAV.*$/i, '').trim();
+        }
+
+        // 提取详情页时长：从 meta og:video:duration 秒数转换，保留在 releaseDate 中
+        let durationFormatted = "";
+        const durMatch = html.match(/property=["']og:video:duration["']\s+content=["'](\d+)["']/i) || html.match(/content=["'](\d+)["']\s+property=["']og:video:duration["']/i);
+        if (durMatch && durMatch[1]) {
+            const totalSec = parseInt(durMatch[1], 10);
+            if (!isNaN(totalSec) && totalSec > 0) {
+                const h = Math.floor(totalSec / 3600);
+                const m = Math.floor((totalSec % 3600) / 60);
+                const s = totalSec % 60;
+                durationFormatted = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
         }
         
         let videoUrl = "";
@@ -980,11 +990,13 @@ async function loadDetail(link) {
             type: "url",
             videoUrl: videoUrl || link,
             title: title || `${videoCode}`,
-            description: `番号: ${videoCode}`,
+            description: durationFormatted ? `时长: ${durationFormatted} | 番号: ${videoCode}` : `番号: ${videoCode}`,
             imgSrc: `https://fourhoi.com/${videoId}/cover-t.jpg`,
             backdropPath: `https://fourhoi.com/${videoId}/cover-t.jpg`,
             mediaType: "movie",
             link: link,
+            releaseDate: durationFormatted,
+            durationText: durationFormatted,
             customHeaders: {
                 "Referer": "https://missav.ai/",
                 "Origin": "https://missav.ai",
@@ -998,17 +1010,13 @@ async function loadDetail(link) {
         
         return {
             id: link,
-            type: "detail",
+            type: "url",
             videoUrl: link,
             title: `${videoCode}`,
             description: `番号: ${videoCode}`,
-            posterPath: "",
+            imgSrc: `https://fourhoi.com/${videoId}/cover-t.jpg`,
             backdropPath: `https://fourhoi.com/${videoId}/cover-t.jpg`,
             mediaType: "movie",
-            duration: 0,
-            durationText: "",
-            previewUrl: "",
-            playerType: "system",
             link: link
         };
     }
