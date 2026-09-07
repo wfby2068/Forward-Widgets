@@ -1,10 +1,10 @@
 var WidgetMetadata = {
     id: "ti.bemarkt.missav",
     title: "MissAV",
-    description: "获取 MissAV 推荐 (婉儿定制版)",
+    description: "获取 MissAV 推荐 (婉儿定制版 带时长显示)",
     author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "2.2.0",
+    version: "2.3.0",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
@@ -834,14 +834,24 @@ function parseVideoList(html) {
             
             if (imgSrc) {
                 let title = $link.attr('title') || $img.attr('alt') || '';
+                const $card = $link.closest('div.missav_fans-thumbnail, div.thumbnail, div[class*="thumbnail"], div[class*="group"], div.relative');
                 
-                if (!title) {
-                    const $parent = $link.closest('div');
-                    title = $parent.find('h1, h2, h3, .title, [class*="title"]').first().text().trim();
+                if (!title && $card.length) {
+                    title = $card.find('h1, h2, h3, .title, [class*="title"]').first().text().trim();
                 }
                 
                 if (!title) {
                     title = $link.text().trim();
+                }
+                
+                // 提取卡片上的时长标签
+                let durationText = "";
+                const $duration = $card.find('span[class*="bottom-1"], span[class*="right-1"], span[class*="text-xs"], .label, [class*="duration"]').first();
+                if ($duration.length > 0) {
+                    const rawDur = $duration.text().trim();
+                    if (/\d{1,2}:\d{2}(?::\d{2})?/.test(rawDur)) {
+                        durationText = rawDur;
+                    }
                 }
                 
                 const videoId = extractVideoId(href);
@@ -863,7 +873,9 @@ function parseVideoList(html) {
                     backdropPath: horizontalCoverUrl,
                     mediaType: "movie",
                     link: fullVideoUrl,
-                    description: `番号: ${videoCode}`
+                    releaseDate: durationText,
+                    durationText: durationText,
+                    description: durationText ? `时长: ${durationText} | 番号: ${videoCode}` : `番号: ${videoCode}`
                 });
             }
         }
