@@ -4,25 +4,11 @@ var WidgetMetadata = {
     description: "获取 MissAV 推荐 (婉儿定制版)",
     author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "2.0.0",
+    version: "2.1.0",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
         {
-            title: "搜索影片",
-            description: "搜索 MissAV 影片内容",
-            requiresWebView: false,
-            functionName: "searchVideos",
-            cacheDuration: 1800,
-            params: [
-                {
-                    name: "keyword",
-                    title: "搜索关键词",
-                    type: "input",
-                    description: "输入搜索关键词（演员名、番号、标题等）",
-                    value: ""
-                },
-                {
                     name: "sort_by",
                     title: "排序",
                     type: "enumeration",
