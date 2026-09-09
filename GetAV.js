@@ -4,10 +4,26 @@ var WidgetMetadata = {
   description: "获取 GetAV 影视推荐 (婉儿定制版)",
   author: "婉儿 (Waner)",
   site: "https://getav.net/zh",
-  version: "1.0.0",
+  version: "1.1.0",
   requiredVersion: "0.0.1",
   detailCacheDuration: 300,
   modules: [
+    {
+      title: "4K 热门",
+      description: "浏览 GetAV 4K 高清影片，按人气排序",
+      requiresWebView: true,
+      functionName: "loadPage",
+      cacheDuration: 1800,
+      params: [
+        {
+          name: "url",
+          title: "列表地址",
+          type: "constant",
+          value: "https://getav.net/zh/4k?sort=popular&page=1"
+        },
+        { name: "page", title: "页码", type: "page", value: "1" }
+      ]
+    },
     {
       title: "最新更新",
       description: "浏览最新更新视频",
