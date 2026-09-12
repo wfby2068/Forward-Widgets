@@ -20,7 +20,7 @@ var WidgetMetadata = {
         {
             title: "4K 影片库",
             description: "GetAV 4K 分类",
-            requiresWebView: false,
+            requiresWebView: true,
             functionName: "loadPage",
             cacheDuration: 1800,
             params: [
@@ -100,7 +100,7 @@ function parseVideoList(html) {
 }
 
 function parseDomLinks($, videos, seenUrls) {
-    $('a[href*="/video/"], a[href*="/v/"]').each((index, element) => {
+    $('a[href*="/videos/"], a[href*="/video/"], a[href*="/v/"]').each((index, element) => {
         const $link = $(element);
         const href = $link.attr("href") || "";
 
@@ -167,7 +167,7 @@ function tryParseJsonLike(raw, videos, seenUrls) {
 }
 
 function parseHrefFallback(html, videos, seenUrls) {
-    const hrefPattern = /href=["']([^"']*(?:\/video\/|\/v\/)[^"']*)["'][^>]*>([\s\S]{0,500}?)(?=<\/a>)/gi;
+    const hrefPattern = /href=["']([^"']*(?:\/videos\/|\/video\/|\/v\/)[^"']*)["'][^>]*>([\s\S]{0,500}?)(?=<\/a>)/gi;
     let hrefMatch;
     while ((hrefMatch = hrefPattern.exec(html)) !== null) {
         const link = normalizeUrl(decodeText(hrefMatch[1]));
@@ -251,8 +251,7 @@ function forwardToWebView(link, title) {
 function forwardListItem(link, title) {
     return {
         id: link,
-        type: "webview",
-        videoUrl: link,
+        type: "url",
         title: title || "打开列表",
         imgSrc: SITE_URL + "/favicon.ico",
         backdropPath: SITE_URL + "/favicon.ico",
@@ -288,13 +287,13 @@ function normalizeVideoCandidate(value) {
 
     const url = raw.startsWith("/") || raw.startsWith("http")
         ? normalizeUrl(raw)
-        : normalizeUrl(`/zh/video/${raw}`);
+        : normalizeUrl(`/zh/videos/${raw}`);
 
     return isVideoLink(url) ? url : "";
 }
 
 function isVideoLink(link) {
-    return /^https?:\/\/getav\.net\/(?:[a-z]{2}\/)?(?:video|v)\//i.test(link || "");
+    return /^https?:\/\/getav\.net\/(?:[a-z]{2}\/)?(?:videos|video|v)\//i.test(link || "");
 }
 
 function extractTitle($, $link, $img, $card) {
