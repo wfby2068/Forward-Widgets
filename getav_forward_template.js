@@ -212,7 +212,7 @@ async function loadDetail(link) {
     const targetUrl = normalizeUrl(link);
     const title = await fetchDetailTitle(targetUrl);
 
-    return forwardToWebView(targetUrl, title);
+    return createDetailItem(targetUrl, title);
 }
 
 async function fetchDetailTitle(link) {
@@ -236,15 +236,15 @@ async function fetchDetailTitle(link) {
     }
 }
 
-function forwardToWebView(link, title) {
+function createDetailItem(link, title) {
     return {
         id: link,
-        type: "webview",
-        videoUrl: link,
+        type: "url",
         title: title || "点击播放",
         mediaType: "movie",
         link: link,
-        description: "已转发到内置 WebView，由网站页面自行加载播放"
+        playerType: "app",
+        description: "该站点只能在网页播放器中播放；Forward 播放器需要直连视频地址，不能直接播放网页地址。请用详情页链接在浏览器/WebView 打开。"
     };
 }
 
