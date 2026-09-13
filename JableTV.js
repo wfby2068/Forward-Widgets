@@ -1,66 +1,71 @@
 var WidgetMetadata = {
     id: "ti.bemarkt.jable",
     title: "Jable.tv",
-    description: "获取 Jable.tv 分类影片",
+    description: "获取 Jable.tv 最新、热门与搜索影片",
     author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "2.0.0",
+    version: "2.1.0",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
-        simpleModule("今日热门", "loadTodayHot"),
-        simpleModule("本周热门", "loadWeeklyHot"),
-        simpleModule("本月热门", "loadMonthlyHot"),
-        simpleModule("新作上市", "loadNewRelease"),
-        simpleModule("中文字幕", "loadChineseSubtitle"),
-        categoryModule("无码影片库", ["uncensored-leak", "fc2", "heyzo", "tokyohot", "caribbeancom", "gachinco"]),
-        categoryModule("亚洲AV专区", ["madou", "klive", "clive"]),
-        categoryModule("影片质量类", ["hd", "exclusive", "solo", "full-hd", "low-cost", "package"]),
-        categoryModule("角色与身份", ["人妻", "熟女", "素人", "美少女", "痴女", "女高中生", "秘书", "家庭主妇", "大小姐"]),
-        categoryModule("性行为类型", ["中出", "口交", "骑乘", "潮吹", "乳交", "颜射", "自慰", "手淫", "3p", "多人", "洗澡"]),
-        categoryModule("情节与主题", ["企划", "乱伦", "ntr", "搭讪", "淫乱", "剧情", "羞辱"]),
-        categoryModule("特殊玩法类", ["多人运动", "拘束", "脏话", "催眠洗脑", "口球", "放置play", "奴隶"]),
-        categoryModule("身材特征类", ["巨乳", "苗条", "美乳", "美尻", "性感的腿", "小乳房"]),
-        categoryModule("职业角色类", ["接待员", "女导游", "啦啦队", "空中小姐", "台湾模特儿", "迷你裙女警", "演员"]),
-        categoryModule("拍摄方式类", ["自拍", "偷拍", "第一次拍摄", "主观性", "记录", "按摩"]),
-        categoryModule("时长合集类", ["4小时以上", "合集"]),
-        categoryModule("服装造型类", ["裙子", "浴衣", "连裤袜", "面具", "靴子", "高跟鞋", "围裙", "金发"]),
-        categoryModule("特殊题材类", ["sf", "洛丽塔", "御宅", "魔法少女", "3d", "ai生成的作品", "动漫人物", "虚拟现实", "动画", "偶像"]),
+        listModule("最新更新", "按更新时间排列", "loadLatest"),
+        listModule("近期热门", "近期热度排序", "loadRecentPopular"),
+        listModule("最多观看", "按观看数排序", "loadMostViewed"),
+        listModule("最多收藏", "按收藏数排序", "loadMostFavorited"),
+        listModule("中文字幕", "Jable 中文字幕影片", "loadChinese"),
         {
             title: "搜索影片", description: "按番号、演员或标题搜索", requiresWebView: false,
-            functionName: "searchVideos", cacheDuration: 1800,
-            params: [{ name: "keyword", title: "关键词", type: "input", description: "番号或演员名", value: "" }, { name: "page", title: "页码", type: "page", description: "页码", value: "1" }]
+            functionName: "searchVideos", cacheDuration: 900,
+            params: [
+                { name: "keyword", title: "关键词", type: "input", description: "番号、演员名或标题", value: "" },
+                { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
+            ]
         }
     ]
 };
 
-function simpleModule(title, fn) {
-    return { title: title, description: title + "影片", requiresWebView: false, functionName: fn, cacheDuration: 1800, params: [{ name: "page", title: "页码", type: "page", description: "页码", value: "1" }] };
-}
-function categoryModule(title, values) {
-    return { title: title, description: title + "分类", requiresWebView: false, functionName: "loadCategory", cacheDuration: 1800, params: [{ name: "category", title: "选择分类", type: "enumeration", description: "选择分类", value: values[0], enumOptions: values.map(function(v) { return { title: v, value: v }; }) }, { name: "page", title: "页码", type: "page", description: "页码", value: "1" }] };
+function listModule(title, description, functionName) {
+    return { title: title, description: description, requiresWebView: false, functionName: functionName, cacheDuration: 1800, params: [{ name: "page", title: "页码", type: "page", description: "页码", value: "1" }] };
 }
 
 const JABLE = "https://jable.tv";
-const HEADERS = { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8", "Cache-Control": "no-cache", "Pragma": "no-cache", "Referer": JABLE + "/" };
+const HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8",
+    "Cache-Control": "no-cache", "Pragma": "no-cache", "Referer": JABLE + "/"
+};
 
-async function loadTodayHot(p) { return fetchList(sortUrl("video_viewed", p), pageUrl("/latest-updates/", p)); }
-async function loadWeeklyHot(p) { return fetchList(sortUrl("weekly_views", p), pageUrl("/latest-updates/", p)); }
-async function loadMonthlyHot(p) { return fetchList(sortUrl("monthly_views", p), pageUrl("/latest-updates/", p)); }
-async function loadNewRelease(p) { return fetchList(sortUrl("post_date", p), pageUrl("/latest-updates/", p)); }
-async function loadChineseSubtitle(p) { return fetchList(JABLE + "/tags/chinese-subtitle/" + pagePart(p.page), pageUrl("/latest-updates/", p)); }
-async function loadCategory(p) { var value = String(p.category || ""); return fetchList(JABLE + "/tags/" + encodeURIComponent(value) + "/" + pagePart(p.page), pageUrl("/latest-updates/", p)); }
-async function searchVideos(p) { var q = String(p.keyword || "").trim(); return q ? fetchList(JABLE + "/search/" + encodeURIComponent(q) + "/" + pagePart(p.page), pageUrl("/latest-updates/", p)) : [{ id: "jable-search", type: "url", title: "请输入搜索关键词", mediaType: "movie", link: JABLE + "/search/", description: "在 WebView 中打开搜索" }]; }
-function sortUrl(sort, p) { var base = JABLE + "/latest-updates/?sort_by=" + encodeURIComponent(sort); var n = Math.max(parseInt((p || {}).page, 10) || 1, 1); return n > 1 ? base + "&from=" + ((n - 1) * 24 + 1) : base; }
-function pageUrl(path, p) { return JABLE + path + pagePart(p && p.page); }
+async function loadLatest(p) { return fetchList(sortUrl("post_date", p)); }
+async function loadRecentPopular(p) { return fetchList(sortUrl("post_date_and_popularity", p)); }
+async function loadMostViewed(p) { return fetchList(sortUrl("video_viewed", p)); }
+async function loadMostFavorited(p) { return fetchList(sortUrl("most_favourited", p)); }
+async function loadChinese(p) { return fetchList(JABLE + "/tags/chinese-subtitle/" + pagePart(p.page)); }
+async function searchVideos(p) {
+    var q = String(p.keyword || "").trim();
+    if (!q) return [webItem(JABLE + "/search/", "打开 Jable 搜索")];
+    return fetchList(JABLE + "/search/" + encodeURIComponent(q) + "/" + pagePart(p.page));
+}
+function sortUrl(sort, p) {
+    var u = JABLE + "/latest-updates/?sort_by=" + encodeURIComponent(sort);
+    var n = Math.max(parseInt((p || {}).page, 10) || 1, 1);
+    return n > 1 ? u + "&from=" + ((n - 1) * 24 + 1) : u;
+}
 function pagePart(page) { var n = Math.max(parseInt(page, 10) || 1, 1); return n === 1 ? "" : "page/" + n + "/"; }
 
-async function fetchList(url, fallbackUrl) {
-    try { var r = await Widget.http.get(url, { headers: HEADERS, allow_redirects: true }); if (r && r.data && r.data.length > 5000) { var a = parseList(r.data); if (a.length) return a; } } catch (e) {}
-    // 保留当前分类自己的 URL；不能回退到 latest-updates，否则所有栏目会显示同一批影片。
-    var label = url.indexOf("video_viewed") >= 0 ? "今日热门" : url.indexOf("weekly_views") >= 0 ? "本周热门" : url.indexOf("monthly_views") >= 0 ? "本月热门" : url.indexOf("post_date") >= 0 ? "新作上市" : url.indexOf("chinese") >= 0 ? "中文字幕" : "Jable.tv 分类";
-    return [{ id: "jable-page-" + url, type: "url", title: "打开 " + label, imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, description: "列表抓取被站点防护拦截，已保留当前分类并在 WebView 中打开" }];
+async function fetchList(url) {
+    try {
+        var r = await Widget.http.get(url, { headers: HEADERS, allow_redirects: true });
+        if (r && r.data && r.data.length > 5000) {
+            var items = parseList(r.data);
+            if (items.length) return items;
+        }
+    } catch (e) {}
+    // Important: preserve this module's URL. Never substitute latest-updates,
+    // otherwise all sections falsely show the same videos.
+    return [webItem(url, "打开此 Jable.tv 分类")];
 }
+
 function parseList(html) {
     var $ = Widget.html.load(html), out = [], seen = new Set();
     $("a[href]").each(function(i, el) {
@@ -75,9 +80,19 @@ function parseList(html) {
     });
     return out;
 }
+
+function webItem(url, title) { return { id: "jable-web-" + url, type: "url", title: title, imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, description: "在内置 WebView 中打开此 Jable.tv 页面" }; }
+
 async function loadDetail(link) {
-    var url = String(link || JABLE + "/latest-updates/"), fallback = { id: url, type: "url", title: codeFromUrl(url) || "Jable.tv 详情页", mediaType: "movie", link: url, description: "在 WebView 中打开 Jable.tv 详情页" };
-    try { var r = await Widget.http.get(url, { headers: Object.assign({}, HEADERS, { Referer: url }), allow_redirects: true }), h = r && r.data ? String(r.data) : ""; if (!h || /just a moment|cf-chl-|challenge-platform/i.test(h)) return fallback; var t = clean((meta(h, "og:title") || codeFromUrl(url)).replace(/\s*-\s*Jable\.TV.*$/i, "")), c = meta(h, "og:image"), d = durationFromHtml(h), m = h.match(/https?:\\\/\\\/[^"'\s]+\.m3u8[^"'\s]*/i) || h.match(/https?:\/\/[^"'\s]+\.m3u8[^"'\s]*/i); var item = { id: url, type: "url", title: t || "Jable.tv 影片", mediaType: "movie", link: url, imgSrc: c, backdropPath: c, releaseDate: d, durationText: d, description: d ? "时长: " + d : "Jable.tv" }; if (m) { item.videoUrl = m[0].replace(/\\\//g, "/"); item.customHeaders = { Referer: url, Origin: JABLE, "User-Agent": HEADERS["User-Agent"] }; } return item; } catch (e) { return fallback; }
+    var url = String(link || JABLE + "/latest-updates/"), fallback = webItem(url, codeFromUrl(url) || "Jable.tv 详情页");
+    try {
+        var r = await Widget.http.get(url, { headers: Object.assign({}, HEADERS, { Referer: url }), allow_redirects: true }), h = r && r.data ? String(r.data) : "";
+        if (!h || /just a moment|cf-chl-|challenge-platform/i.test(h)) return fallback;
+        var title = clean((meta(h, "og:title") || codeFromUrl(url)).replace(/\s*-\s*Jable\.TV.*$/i, "")), cover = meta(h, "og:image"), dur = durationFromHtml(h), m = h.match(/https?:\\\/\\\/[^"'\s]+\.m3u8[^"'\s]*/i) || h.match(/https?:\/\/[^"'\s]+\.m3u8[^"'\s]*/i);
+        var item = { id: url, type: "url", title: title || "Jable.tv 影片", mediaType: "movie", link: url, imgSrc: cover, backdropPath: cover, releaseDate: dur, durationText: dur, description: dur ? "时长: " + dur : "Jable.tv" };
+        if (m) { item.videoUrl = m[0].replace(/\\\//g, "/"); item.customHeaders = { Referer: url, Origin: JABLE, "User-Agent": HEADERS["User-Agent"] }; }
+        return item;
+    } catch (e) { return fallback; }
 }
 function duration(s) { var m = String(s || "").match(/\b(?:\d{1,2}:)?\d{1,2}:\d{2}\b/); return m ? m[0] : ""; }
 function durationFromHtml(h) { var m = h.match(/og:video:duration["']\s+content=["'](\d+)["']/i) || h.match(/content=["'](\d+)["']\s+property=["']og:video:duration/i); if (!m) return duration(h); var n = parseInt(m[1], 10), H = Math.floor(n / 3600), M = Math.floor(n % 3600 / 60), S = n % 60; return (H ? H + ":" : "") + String(M).padStart(2, "0") + ":" + String(S).padStart(2, "0"); }
