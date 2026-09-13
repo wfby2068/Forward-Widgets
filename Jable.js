@@ -26,7 +26,7 @@ async function loadPage(params) {
     var url = page === 1 ? "https://jable.tv/latest-updates/" : "https://jable.tv/latest-updates/page/" + page + "/";
     return [{
         id: url,
-        type: "link",
+        type: "url",
         title: "打开 Jable.tv 最新更新",
         imgSrc: "https://jable.tv/favicon.ico",
         backdropPath: "https://jable.tv/favicon.ico",
