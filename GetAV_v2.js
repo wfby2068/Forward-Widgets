@@ -19,7 +19,7 @@ var WidgetMetadata = {
   description: "GetAV 分类浏览与网页播放",
   author: "Kevin",
   site: "https://getav.net/zh",
-  version: "2.0.0",
+  version: "2.1.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 300,
   modules: [
@@ -80,7 +80,8 @@ function pagePath(params) {
 function webViewItem(url, title, description) {
   return {
     id: url,
-    type: "url",
+    type: "webview",
+    videoUrl: url,
     title: title || "打开 GetAV",
     link: url,
     mediaType: "movie",
@@ -231,7 +232,7 @@ async function loadDetail(link) {
           type: "detail",
           title: title || "GetAV 影片",
           link: target,
-          videoUrl: direct[1],
+          videoUrl: direct && direct[1] ? direct[1] : target,
           posterPath: poster,
           backdropPath: poster,
           mediaType: "movie",
