@@ -1,0 +1,15 @@
+{
+  "title": "Waner Forward Widgets",
+  "description": "婉儿定制的 Forward 模块",
+  "widgets": [
+    {
+      "id": "ti.bemarkt.jabletv",
+      "title": "JableTV",
+      "description": "获取 Jable.tv 最新影片",
+      "requiredVersion": "0.0.1",
+      "version": "1.0.0",
+      "author": "婉儿 (Waner)",
+      "url": "https://raw.githubusercontent.com/wfby2068/Forward-Widgets/main/Jable.js"
+    }
+  ]
+}
