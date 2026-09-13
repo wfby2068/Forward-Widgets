@@ -19,7 +19,7 @@ var WidgetMetadata = {
   description: "GetAV 分类浏览与网页播放",
   author: "Kevin",
   site: "https://getav.net/zh",
-  version: "2.1.0",
+  version: "2.2.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 300,
   modules: [
@@ -165,23 +165,26 @@ function parseVideoSitemap(xml) {
   var blocks = String(xml || "").match(/<url>[\s\S]*?<\/url>/gi) || [];
   blocks.forEach(function(block, index) {
     var link = xmlText(block, "loc");
+    var player = xmlText(block, "player_loc");
     var title = xmlText(block, "title");
     var image = xmlText(block, "thumbnail_loc");
     var duration = xmlText(block, "duration");
     if (!link || !isDetailLink(link) || seen[link]) return;
     seen[link] = true;
+    var playLink = absoluteUrl(player) || link;
     result.push({
       id: index + "|" + link,
-      type: "url",
+      type: "webview",
+      videoUrl: playLink,
       title: title || "GetAV 影片",
       imgSrc: absoluteUrl(image),
       posterPath: absoluteUrl(image),
       backdropPath: absoluteUrl(image),
       mediaType: "movie",
-      link: link,
+      link: playLink,
       releaseDate: duration || "",
       durationText: duration || "",
-      description: duration ? "时长: " + duration + " 秒" : "GetAV"
+      description: duration ? "时长: " + duration + " 秒 | 网页播放器" : "GetAV 网页播放器"
     });
   });
   return result;
