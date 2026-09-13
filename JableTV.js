@@ -47,9 +47,9 @@ async function searchVideos(p) {
     return fetchList(JABLE + "/search/" + encodeURIComponent(q) + "/" + pagePart(p.page));
 }
 function sortUrl(sort, p) {
-    var u = JABLE + "/latest-updates/?sort_by=" + encodeURIComponent(sort);
     var n = Math.max(parseInt((p || {}).page, 10) || 1, 1);
-    return n > 1 ? u + "&from=" + ((n - 1) * 24 + 1) : u;
+    // Jable uses the list's `from` cursor; page=1 must also include from=1.
+    return JABLE + "/latest-updates/?sort_by=" + encodeURIComponent(sort) + "&from=" + ((n - 1) * 24 + 1);
 }
 function pagePart(page) { var n = Math.max(parseInt(page, 10) || 1, 1); return n === 1 ? "" : "page/" + n + "/"; }
 
