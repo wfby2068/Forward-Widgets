@@ -44,19 +44,23 @@ function categoryModule(title, values) {
 const JABLE = "https://jable.tv";
 const HEADERS = { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8", "Cache-Control": "no-cache", "Pragma": "no-cache", "Referer": JABLE + "/" };
 
-async function loadTodayHot(p) { return fetchList(pageUrl("/today-hot/", p)); }
-async function loadWeeklyHot(p) { return fetchList(pageUrl("/weekly-hot/", p)); }
-async function loadMonthlyHot(p) { return fetchList(pageUrl("/monthly-hot/", p)); }
-async function loadNewRelease(p) { return fetchList(pageUrl("/latest-updates/", p)); }
-async function loadChineseSubtitle(p) { return fetchList(pageUrl("/tags/chinese-subtitle/", p)); }
-async function loadCategory(p) { return fetchList(JABLE + "/tags/" + encodeURIComponent(p.category || "") + "/" + pagePart(p.page)); }
-async function searchVideos(p) { var q = String(p.keyword || "").trim(); return q ? fetchList(JABLE + "/search/" + encodeURIComponent(q) + "/" + pagePart(p.page)) : [{ id: "jable-search", type: "url", title: "请输入搜索关键词", mediaType: "movie", link: JABLE + "/search/", description: "在 WebView 中打开搜索" }]; }
+async function loadTodayHot(p) { return fetchList(sortUrl("video_viewed", p), pageUrl("/latest-updates/", p)); }
+async function loadWeeklyHot(p) { return fetchList(sortUrl("weekly_views", p), pageUrl("/latest-updates/", p)); }
+async function loadMonthlyHot(p) { return fetchList(sortUrl("monthly_views", p), pageUrl("/latest-updates/", p)); }
+async function loadNewRelease(p) { return fetchList(sortUrl("post_date", p), pageUrl("/latest-updates/", p)); }
+async function loadChineseSubtitle(p) { return fetchList(JABLE + "/tags/chinese-subtitle/" + pagePart(p.page), pageUrl("/latest-updates/", p)); }
+async function loadCategory(p) { var value = String(p.category || ""); return fetchList(JABLE + "/tags/" + encodeURIComponent(value) + "/" + pagePart(p.page), pageUrl("/latest-updates/", p)); }
+async function searchVideos(p) { var q = String(p.keyword || "").trim(); return q ? fetchList(JABLE + "/search/" + encodeURIComponent(q) + "/" + pagePart(p.page), pageUrl("/latest-updates/", p)) : [{ id: "jable-search", type: "url", title: "请输入搜索关键词", mediaType: "movie", link: JABLE + "/search/", description: "在 WebView 中打开搜索" }]; }
+function sortUrl(sort, p) { var base = JABLE + "/latest-updates/?sort_by=" + encodeURIComponent(sort); var n = Math.max(parseInt((p || {}).page, 10) || 1, 1); return n > 1 ? base + "&from=" + ((n - 1) * 24 + 1) : base; }
 function pageUrl(path, p) { return JABLE + path + pagePart(p && p.page); }
 function pagePart(page) { var n = Math.max(parseInt(page, 10) || 1, 1); return n === 1 ? "" : "page/" + n + "/"; }
 
-async function fetchList(url) {
+async function fetchList(url, fallbackUrl) {
     try { var r = await Widget.http.get(url, { headers: HEADERS, allow_redirects: true }); if (r && r.data && r.data.length > 5000) { var a = parseList(r.data); if (a.length) return a; } } catch (e) {}
-    return [{ id: "jable-page-" + url, type: "url", title: "打开 Jable.tv 分类页面", imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, description: "站点防护拦截了列表抓取，点击此项在 WebView 中打开" }];
+    if (fallbackUrl && fallbackUrl !== url) {
+        try { var f = await Widget.http.get(fallbackUrl, { headers: HEADERS, allow_redirects: true }); if (f && f.data && f.data.length > 5000) { var b = parseList(f.data); if (b.length) return b; } } catch (e) {}
+    }
+    return [{ id: "jable-page-" + url, type: "url", title: "打开 Jable.tv 分类页面", imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, description: "站点防护拦截了列表抓取，点击此项在内置 WebView 中打开" }];
 }
 function parseList(html) {
     var $ = Widget.html.load(html), out = [], seen = new Set();
