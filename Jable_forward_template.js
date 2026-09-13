@@ -8,18 +8,18 @@
  */
 
 var WidgetMetadata = {
-    id: "forward.jable.latest",
-    title: "Jable.tv FORWARD",
-    description: "获取 Jable.tv 最新影片，并转发到内置 WebView",
-    author: "婉儿",
+    id: "ti.bemarkt.jable",
+    title: "Jable.tv",
+    description: "获取 Jable.tv 最新影片 (Forward WebView版)",
+    author: "婉儿 (Waner)",
     site: "https://jable.tv",
-    version: "1.2.0",
+    version: "1.3.0",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [{
         title: "最新更新",
         description: "Jable.tv 最新更新影片",
-        requiresWebView: true,
+        requiresWebView: false,
         functionName: "loadPage",
         cacheDuration: 900,
         params: [{ name: "page", title: "页码", type: "page", description: "页码", value: "1" }]
