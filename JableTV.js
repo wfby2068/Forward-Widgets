@@ -57,10 +57,10 @@ function pagePart(page) { var n = Math.max(parseInt(page, 10) || 1, 1); return n
 
 async function fetchList(url, fallbackUrl) {
     try { var r = await Widget.http.get(url, { headers: HEADERS, allow_redirects: true }); if (r && r.data && r.data.length > 5000) { var a = parseList(r.data); if (a.length) return a; } } catch (e) {}
-    if (fallbackUrl && fallbackUrl !== url) {
-        try { var f = await Widget.http.get(fallbackUrl, { headers: HEADERS, allow_redirects: true }); if (f && f.data && f.data.length > 5000) { var b = parseList(f.data); if (b.length) return b; } } catch (e) {}
-    }
-    return [{ id: "jable-page-" + url, type: "url", title: "打开 Jable.tv 分类页面", imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, description: "站点防护拦截了列表抓取，点击此项在内置 WebView 中打开" }];
+    // Jable 的部分排序/标签路由会随站点版本变化；不要让分类空白，回退到可用的最新列表。
+    var fallback = fallbackUrl || JABLE + "/latest-updates/";
+    try { var f = await Widget.http.get(fallback, { headers: HEADERS, allow_redirects: true }); if (f && f.data && f.data.length > 5000) { var b = parseList(f.data); if (b.length) return b; } } catch (e) {}
+    return [{ id: "jable-page-" + url, type: "url", title: "打开 Jable.tv 分类页面", imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: fallback, description: "分类暂时无法抓取，点击此项在内置 WebView 中打开" }];
 }
 function parseList(html) {
     var $ = Widget.html.load(html), out = [], seen = new Set();
