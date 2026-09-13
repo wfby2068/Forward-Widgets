@@ -1,10 +1,10 @@
 var WidgetMetadata = {
-    id: "ti.bemarkt.jable",
+    id: "ti.bemarkt.jable.v2",
     title: "Jable.tv",
-    description: "获取 Jable.tv 最新、热门与搜索影片",
+    description: "获取 Jable.tv 最新与热门分类影片",
     author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "2.1.0",
+    version: "2.2.0",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [
