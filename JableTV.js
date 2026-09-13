@@ -4,7 +4,7 @@ var WidgetMetadata = {
     description: "获取 Jable.tv 最新影片",
     author: "婉儿 (Waner)",
     site: "https://widgets-xd.vercel.app",
-    version: "1.0.3",
+    version: "1.0.4",
     requiredVersion: "0.0.1",
     detailCacheDuration: 300,
     modules: [{
@@ -37,51 +37,28 @@ async function loadLatest(params = {}) {
             if (items.length) return items;
         }
     } catch (error) {}
-
-    // Cloudflare fallback: always return one visible WebView item instead of an empty list.
-    return [{
-        id: "jable-latest-" + page,
-        type: "url",
-        title: "Jable.tv 最新更新 · 第 " + page + " 页",
-        imgSrc: JABLE + "/favicon.ico",
-        backdropPath: JABLE + "/favicon.ico",
-        mediaType: "movie",
-        link: url,
-        videoUrl: url,
-        releaseDate: "",
-        description: "站点防护拦截了列表抓取，点击此项在内置 WebView 中打开"
-    }];
+    return [{ id: "jable-latest-" + page, type: "link", title: "Jable.tv 最新更新 · 第 " + page + " 页", imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, description: "站点防护拦截了列表抓取，点击此项在内置 WebView 中打开" }];
 }
 
 function parseJable(html) {
-    const $ = Widget.html.load(html);
-    const result = [];
-    const seen = new Set();
+    const $ = Widget.html.load(html), result = [], seen = new Set();
     $("a[href]").each((index, element) => {
-        const $a = $(element);
-        const href = normalize($a.attr("href") || "");
+        const $a = $(element), href = normalize($a.attr("href") || "");
         if (!/^https:\/\/jable\.tv\/videos?\/[a-z0-9_-]+\/?$/i.test(href) || seen.has(href)) return;
-        const $img = $a.find("img").first();
-        const $card = $a.closest("article,li,.card,.item,.video,[class*='video'],[class*='item']").first();
+        const $img = $a.find("img").first(), $card = $a.closest("article,li,.card,.item,.video,[class*='video'],[class*='item']").first();
         const cover = normalize($img.attr("data-src") || $img.attr("data-original") || $img.attr("src") || "");
         const title = clean($a.attr("title") || $img.attr("alt") || $card.find("h1,h2,h3,.title,.name,[class*='title']").first().text() || $a.text());
         if (!cover) return;
         seen.add(href);
-        result.push({ id: index + "|" + href, type: "url", title: title || href.split("/").slice(-2,-1)[0], imgSrc: cover, backdropPath: cover, mediaType: "movie", link: href, videoUrl: href, description: "Jable.tv" });
+        result.push({ id: index + "|" + href, type: "link", title: title || href.split("/").slice(-2,-1)[0], imgSrc: cover, backdropPath: cover, mediaType: "movie", link: href, description: "Jable.tv 详情页" });
     });
     return result;
 }
 
 async function loadDetail(link) {
     const url = String(link || JABLE + "/latest-updates/");
-    return { id: url, type: "url", title: "Jable.tv 详情页", imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, videoUrl: url, description: "在内置 WebView 中打开 Jable.tv 详情页" };
+    return { id: url, type: "link", title: "Jable.tv 详情页", imgSrc: JABLE + "/favicon.ico", backdropPath: JABLE + "/favicon.ico", mediaType: "movie", link: url, description: "在内置 WebView 中打开 Jable.tv 详情页；不把详情页 URL 当作视频流播放" };
 }
 
-function normalize(value) {
-    const s = String(value || "").trim();
-    if (!s) return "";
-    if (s.startsWith("//")) return "https:" + s;
-    if (/^https?:\/\//i.test(s)) return s;
-    return JABLE + (s.startsWith("/") ? "" : "/") + s;
-}
+function normalize(value) { const s = String(value || "").trim(); if (!s) return ""; if (s.startsWith("//")) return "https:" + s; if (/^https?:\/\//i.test(s)) return s; return JABLE + (s.startsWith("/") ? "" : "/") + s; }
 function clean(value) { return String(value || "").replace(/\s+/g, " ").trim(); }
