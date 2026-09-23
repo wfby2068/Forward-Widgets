@@ -4,8 +4,7 @@ var WidgetMetadata = {
     description: "暗网禁区 (AWJQ) 官方全版块原汁原味直连解析",
     author: "婉儿",
     site: "https://awjq.cc",
-    version: "2.0.0",
-    requiredVersion: "0.0.2",
+    version: "2.1.0",
     detailCacheDuration: 0,
     modules: [
         // ==========================================
@@ -174,23 +173,13 @@ var WidgetMetadata = {
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
         },
-        {
-            title: "园区与缅北揭秘",
-            description: "官方版块 [Topic 92/94] 东南亚电诈与黑暗园区揭秘 (1200+ 视频)",
-            requiresWebView: false,
-            functionName: "loadTopic92",
-            cacheDuration: 3600,
-            params: [
-                { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
-            ]
-        },
 
         // ==========================================
-        // 官方原生多版块选择器 (任意切换全部 18 个版块)
+        // 官方原生多版块选择器
         // ==========================================
         {
             title: "官方全部版块库",
-            description: "原汁原味直连官方服务器全部 18 大核心板块",
+            description: "原汁原味直连官方服务器各核心板块",
             requiresWebView: false,
             functionName: "loadCustomTopic",
             cacheDuration: 3600,
@@ -207,11 +196,6 @@ var WidgetMetadata = {
                     { title: "同城求偶 (2725)", value: "53" },
                     { title: "暗网杂谈 (1357)", value: "50" },
                     { title: "投稿爆料 (1527)", value: "68" },
-                    { title: "园区揭秘 (512)", value: "92" },
-                    { title: "缅北揭秘 (711)", value: "94" },
-                    { title: "猪仔生活 (444)", value: "90" },
-                    { title: "悬赏令 (430)", value: "91" },
-                    { title: "金三角揭秘 (388)", value: "93" },
                     { title: "灵异交流 (349)", value: "51" }
                 ]},
                 { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
@@ -385,10 +369,6 @@ async function loadTopic50(params) {
 
 async function loadTopic68(params) {
     return await fetchTopicVideos(68, params && params.page, "video");
-}
-
-async function loadTopic92(params) {
-    return await fetchTopicVideos(92, params && params.page, "video");
 }
 
 async function loadCustomTopic(params) {
