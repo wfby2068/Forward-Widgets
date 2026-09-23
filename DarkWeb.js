@@ -4,12 +4,12 @@ var WidgetMetadata = {
     description: "暗网禁区 (AWJQ) 官方全版块原汁原味直连解析",
     author: "婉儿",
     site: "https://awjq.cc",
-    version: "2.2.0",
+    version: "2.3.0",
     requiredVersion: "0.0.2",
     detailCacheDuration: 0,
     modules: [
         // ==========================================
-        // 官方原生版块专区 (全部直连官方 topic_id 数据库，默认热度最高)
+        // 官方原生版块专区 (全部直连官方 topic_id 数据库，1:1对齐App默认顺序)
         // ==========================================
         {
             title: "乱伦换妻",
@@ -18,10 +18,10 @@ var WidgetMetadata = {
             functionName: "loadTopic57",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
                     { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" },
                     { title: "精选推荐", value: "choice" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
@@ -34,10 +34,10 @@ var WidgetMetadata = {
             functionName: "loadTopic54",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
                     { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" },
                     { title: "畅销排行", value: "choice" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
@@ -50,10 +50,10 @@ var WidgetMetadata = {
             functionName: "loadTopic49",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
                     { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" },
                     { title: "精选推荐", value: "choice" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
@@ -66,10 +66,10 @@ var WidgetMetadata = {
             functionName: "loadTopic55",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -81,10 +81,10 @@ var WidgetMetadata = {
             functionName: "loadTopic56",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -96,10 +96,10 @@ var WidgetMetadata = {
             functionName: "loadTopic52",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -111,10 +111,10 @@ var WidgetMetadata = {
             functionName: "loadTopic48",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -126,10 +126,10 @@ var WidgetMetadata = {
             functionName: "loadTopic45",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -141,10 +141,10 @@ var WidgetMetadata = {
             functionName: "loadTopic53",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -156,10 +156,10 @@ var WidgetMetadata = {
             functionName: "loadTopic50",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -171,10 +171,10 @@ var WidgetMetadata = {
             functionName: "loadTopic68",
             cacheDuration: 3600,
             params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" }
+                    { title: "最近更新", value: "new" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
@@ -204,10 +204,10 @@ var WidgetMetadata = {
                     { title: "投稿爆料 (1527)", value: "68" },
                     { title: "灵异交流 (349)", value: "51" }
                 ]},
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
+                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "video", enumOptions: [
+                    { title: "App默认专区", value: "video" },
                     { title: "热度最高", value: "hot" },
                     { title: "最近更新", value: "new" },
-                    { title: "视频专区", value: "video" },
                     { title: "精选推荐", value: "choice" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
@@ -250,7 +250,7 @@ function isAd(item) {
 
 async function fetchTopicVideos(topicId, page, sort) {
     const p = Math.max(parseInt(page, 10) || 1, 1);
-    const s = sort || "hot";
+    const s = sort || "video";
     const url = `${API_BASE}/awjq_list?topic_id=${topicId}&cate=${encodeURIComponent(s)}&page=${p}&limit=20`;
     try {
         const response = await Widget.http.get(url, {
@@ -331,55 +331,55 @@ async function fetchSearchVideos(word, page) {
 }
 
 // ------------------------------------------
-// 官方版块直接调用 (默认全部按热度最高 hot 排序)
+// 官方版块直接调用 (默认全部完全对齐 App 真实默认流)
 // ------------------------------------------
 async function loadTopic57(params) {
-    return await fetchTopicVideos(57, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(57, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic54(params) {
-    return await fetchTopicVideos(54, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(54, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic49(params) {
-    return await fetchTopicVideos(49, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(49, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic55(params) {
-    return await fetchTopicVideos(55, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(55, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic56(params) {
-    return await fetchTopicVideos(56, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(56, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic52(params) {
-    return await fetchTopicVideos(52, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(52, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic48(params) {
-    return await fetchTopicVideos(48, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(48, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic45(params) {
-    return await fetchTopicVideos(45, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(45, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic53(params) {
-    return await fetchTopicVideos(53, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(53, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic50(params) {
-    return await fetchTopicVideos(50, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(50, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadTopic68(params) {
-    return await fetchTopicVideos(68, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(68, params && params.page, (params && params.sort) || "video");
 }
 
 async function loadCustomTopic(params) {
     const tid = (params && params.topic_id) || "57";
-    return await fetchTopicVideos(tid, params && params.page, (params && params.sort) || "hot");
+    return await fetchTopicVideos(tid, params && params.page, (params && params.sort) || "video");
 }
 
 async function searchVideos(params) {
