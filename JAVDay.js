@@ -4,7 +4,7 @@ var WidgetMetadata = {
   description: "获取 JAVDay 推荐",
   author: "Ti",
   site: "https://widgets-xd.vercel.app",
-  version: "1.2.3",
+  version: "1.3.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 3600,
   modules: [
@@ -608,8 +608,79 @@ async function search(params = {}) {
   ];
 }
 
-async function loadDetail(link) {
+function parseJavdayPlaylist(rawUrl, link) {
+  if (!rawUrl) return { playUrl: "", episodes: [] };
   
+  let clean = String(rawUrl).trim().replace(/^['"]|['"]$/g, "");
+  
+  if (!clean.includes("#") && !clean.includes("$")) {
+    return {
+      playUrl: toAbsoluteUrl(clean),
+      episodes: []
+    };
+  }
+  
+  const parts = clean.split("#").map(p => p.trim()).filter(Boolean);
+  const episodes = [];
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    let epTitle = `第 ${i + 1} 集`;
+    let epUrl = part;
+    
+    if (part.includes("$")) {
+      const segs = part.split("$");
+      epTitle = segs[0].trim() || `第 ${i + 1} 集`;
+      epUrl = segs[1].trim();
+    }
+    
+    epUrl = toAbsoluteUrl(epUrl);
+    
+    if (epUrl) {
+      episodes.push({
+        id: `${link}?ep=${i + 1}`,
+        title: epTitle,
+        videoUrl: epUrl,
+        episode: i + 1
+      });
+    }
+  }
+  
+  const playUrl = episodes.length > 0 ? episodes[0].videoUrl : toAbsoluteUrl(clean);
+  return { playUrl, episodes };
+}
+
+function extractRawPlaylistFromHtml(html, $) {
+  // 1. Artplayer
+  const artMatch = html.match(/new\s+Artplayer\(\s*\{[\s\S]*?url\s*:\s*['"]([^'"]+)['"]/);
+  if (artMatch && artMatch[1]) return artMatch[1];
+
+  // 2. DPlayer
+  const dpMatch = html.match(/new\s+DPlayer\(\s*\{[\s\S]*?url\s*:\s*['"]([^'"]+)['"]/);
+  if (dpMatch && dpMatch[1]) return dpMatch[1];
+
+  // 3. player_aaaa (MacCMS)
+  const paMatch = html.match(/var\s+player_aaaa\s*=\s*\{[\s\S]*?"url"\s*:\s*"([^"]+)"/);
+  if (paMatch && paMatch[1]) return paMatch[1].replace(/\\/g, "/");
+
+  // 4. Any script containing .m3u8
+  const sMatch = html.match(/<script[^>]*>[\s\S]*?(?:url|src)\s*[:=]\s*['"]([^'"]*\.m3u8[^'"]*)['"][\s\S]*?<\/script>/i);
+  if (sMatch && sMatch[1]) return sMatch[1];
+
+  // 5. Video or source elements
+  if ($) {
+    const videoSrc = $("video#J_prismPlayer").attr("src") || 
+                     $("source[src*='.m3u8']").attr("src") ||
+                     $("video source").attr("src") ||
+                     $("video[src]").attr("src") || 
+                     $("iframe[src*='player']").attr("src");
+    if (videoSrc) return videoSrc;
+  }
+
+  return null;
+}
+
+async function loadDetail(link) {
   try {
     const response = await Widget.http.get(link, {
       headers: {
@@ -628,88 +699,41 @@ async function loadDetail(link) {
       };
     }
 
-    const $ = Widget.html.load(response.data);
+    const html = String(response.data);
+    const $ = Widget.html.load(html);
     
-    const dplayerScript = Array.from($("script"))
-      .find(el => {
-        const scriptContent = $(el).html();
-        return scriptContent && scriptContent.includes("new DPlayer");
-      });
-    
+    const title = ($("h1.video-title").text() || $("h1").first().text() || $("title").text() || "").trim();
+    const desc = ($("meta[name='description']").attr("content") || "").trim();
+    const poster = $("meta[property='og:image']").attr("content") || $("video#J_prismPlayer").attr("poster") || "";
+
     const playHeaders = {
       Referer: link,
       Origin: "https://javday.app",
       "User-Agent": JAVDAY_USER_AGENT,
     };
 
-    if (dplayerScript) {
-      const scriptContent = $(dplayerScript).html();
-      const videoUrl = extractVideoUrlFromDPlayerScript(scriptContent);
-      if (videoUrl) {
+    const rawPlaylist = extractRawPlaylistFromHtml(html, $);
+    if (rawPlaylist) {
+      const { playUrl, episodes } = parseJavdayPlaylist(rawPlaylist, link);
+      if (playUrl) {
         return {
           id: link,
           type: "detail",
-          videoUrl: toAbsoluteUrl(videoUrl),
+          videoUrl: playUrl,
+          title: title || undefined,
+          description: desc || undefined,
+          posterPath: poster ? toAbsoluteUrl(poster) : undefined,
+          backdropPath: poster ? toAbsoluteUrl(poster) : undefined,
           playerType: "app",
           muted: false,
           volume: 1,
+          link: link,
           customHeaders: playHeaders,
           headers: playHeaders,
+          durationText: episodes.length > 0 ? `全 ${episodes.length} 集` : undefined,
+          episodes: episodes.length > 0 ? episodes : undefined,
         };
       }
-    }
-    
-    const videoSrc = $("video#J_prismPlayer").attr("src") || 
-                   $("source[src*='.m3u8']").attr("src") ||
-                   $("video source").attr("src");
-    
-    if (videoSrc) {
-      return {
-        id: link,
-        type: "detail",
-        videoUrl: toAbsoluteUrl(videoSrc),
-        playerType: "app",
-        muted: false,
-        volume: 1,
-        customHeaders: playHeaders,
-        headers: playHeaders,
-      };
-    }
-      
-      const scriptSources = Array.from($("script"))
-      .map(el => $(el).html())
-      .find(content => content && content.includes(".m3u8"));
-    
-    if (scriptSources) {
-      const m3u8Match = scriptSources.match(/['"](https?:\/\/[^'"]+\.m3u8[^'"]*)['"]/);
-      if (m3u8Match && m3u8Match[1]) {
-        return {
-          id: link,
-          type: "detail",
-          videoUrl: toAbsoluteUrl(m3u8Match[1]),
-          playerType: "app",
-          muted: false,
-          volume: 1,
-          customHeaders: playHeaders,
-          headers: playHeaders,
-        };
-      }
-    }
-
-    const playerVideo = $("video[src]").attr("src") || 
-                      $("iframe[src*='player']").attr("src");
-    
-    if (playerVideo) {
-      return {
-        id: link,
-        type: "detail",
-        videoUrl: toAbsoluteUrl(playerVideo),
-        playerType: "app",
-        muted: false,
-        volume: 1,
-        customHeaders: playHeaders,
-        headers: playHeaders,
-      };
     }
 
     return {
@@ -720,7 +744,7 @@ async function loadDetail(link) {
       link: link
     };
   } catch (error) {
-    console.error(JAVDAY_LOG_PREFIX + " 加载详情失败");
+    console.error(JAVDAY_LOG_PREFIX + " 加载详情失败: " + error);
     return {
       id: link,
       type: "detail",
