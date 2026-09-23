@@ -4,26 +4,16 @@ var WidgetMetadata = {
     description: "暗网禁区 (AWJQ) 偷拍破解·明星黑料·乱伦揭秘·极速直连播放",
     author: "婉儿",
     site: "https://awjq.cc",
-    version: "1.3.0",
+    version: "1.4.0",
     requiredVersion: "0.0.2",
     detailCacheDuration: 0,
     modules: [
         // ==========================================
-        // 老公特别标注圈选的核心独立专区 (独立直达模块)
+        // 🌟 圈选推荐核心独立专区
         // ==========================================
         {
-            title: "父女乱伦",
-            description: "【圈选推荐】父女伦理禁忌与调教真实实录",
-            requiresWebView: false,
-            functionName: "loadTagDaughter",
-            cacheDuration: 3600,
-            params: [
-                { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
-            ]
-        },
-        {
             title: "母子通奸",
-            description: "【圈选推荐】母子乱伦与家庭禁忌原创专区",
+            description: "【精选】母子乱伦与家庭禁忌原创专区",
             requiresWebView: false,
             functionName: "loadTagMotherSon",
             cacheDuration: 3600,
@@ -33,7 +23,7 @@ var WidgetMetadata = {
         },
         {
             title: "清纯学妹",
-            description: "【圈选推荐】清纯校花、学妹与女大调教精选",
+            description: "【精选】清纯校花、学妹与女大调教精选",
             requiresWebView: false,
             functionName: "loadTagSchoolgirl",
             cacheDuration: 3600,
@@ -43,7 +33,7 @@ var WidgetMetadata = {
         },
         {
             title: "熟女少妇",
-            description: "【圈选推荐】极品人妻、熟女风韵私拍大片",
+            description: "【精选】极品人妻、熟女风韵私拍大片",
             requiresWebView: false,
             functionName: "loadTagMature",
             cacheDuration: 3600,
@@ -53,7 +43,7 @@ var WidgetMetadata = {
         },
         {
             title: "出轨偷情",
-            description: "【圈选推荐】真实出轨捉奸、偷情出轨实录",
+            description: "【精选】真实出轨捉奸、偷情出轨实录",
             requiresWebView: false,
             functionName: "loadTagCheating",
             cacheDuration: 3600,
@@ -63,7 +53,7 @@ var WidgetMetadata = {
         },
         {
             title: "巨乳肥臀",
-            description: "【圈选推荐】极品大胸爆乳、肥臀肉感视觉盛宴",
+            description: "【精选】极品大胸爆乳、肥臀肉感视觉盛宴",
             requiresWebView: false,
             functionName: "loadTagBigBoobs",
             cacheDuration: 3600,
@@ -73,7 +63,7 @@ var WidgetMetadata = {
         },
         {
             title: "黑料吃瓜",
-            description: "【圈选推荐】实时流出网红与明星黑料大爆料",
+            description: "【精选】实时流出网红与明星黑料大爆料",
             requiresWebView: false,
             functionName: "loadTagMelon",
             cacheDuration: 3600,
@@ -83,7 +73,7 @@ var WidgetMetadata = {
         },
         {
             title: "自慰高潮",
-            description: "【圈选推荐】高潮喷水、私密自慰真实自拍",
+            description: "【精选】高潮喷水、私密自慰真实自拍",
             requiresWebView: false,
             functionName: "loadTagMasturbation",
             cacheDuration: 3600,
@@ -93,7 +83,7 @@ var WidgetMetadata = {
         },
         {
             title: "偷窥偷拍",
-            description: "【圈选推荐】摄像头破解、酒店厕所真实偷拍",
+            description: "【精选】摄像头破解、酒店厕所真实偷拍",
             requiresWebView: false,
             functionName: "loadTagSpy",
             cacheDuration: 3600,
@@ -109,7 +99,7 @@ var WidgetMetadata = {
         },
         {
             title: "性瘾孕妇",
-            description: "【圈选推荐】大肚孕妇特殊癖好与猛操内射",
+            description: "【精选】大肚孕妇特殊癖好与猛操内射",
             requiresWebView: false,
             functionName: "loadTagPregnant",
             cacheDuration: 3600,
@@ -119,7 +109,7 @@ var WidgetMetadata = {
         },
 
         // ==========================================
-        // App 顶部滑动横向栏目
+        // 📱 App 顶部滑动横向栏目
         // ==========================================
         {
             title: "热门推荐",
@@ -185,43 +175,41 @@ var WidgetMetadata = {
         },
 
         // ==========================================
-        // 20 大分类标签总库 (全量网格)
+        // 🏷️ 精选分类标签库 (已剔除广告/特定项)
         // ==========================================
         {
-            title: "全部标签库 (20格大全)",
-            description: "完整涵盖 App 宫格全部 20 个标签，任意选择切换",
+            title: "分类标签库",
+            description: "涵盖 App 热门分类标签，任意选择切换",
             requiresWebView: false,
             functionName: "loadGridTag",
             cacheDuration: 3600,
             params: [
-                { name: "tag", title: "标签分类", type: "enumeration", description: "选择分类标签", value: "迷药迷奸", enumOptions: [
-                    { title: "迷药迷奸", value: "迷药迷奸" },
-                    { title: "父女乱伦", value: "女儿" },
-                    { title: "萝莉少女", value: "萝莉少女" },
-                    { title: "AI短剧", value: "AI短剧" },
-                    { title: "探花精选", value: "探花" },
+                { name: "tag", title: "标签分类", type: "enumeration", description: "选择分类标签", value: "清纯学妹", enumOptions: [
                     { title: "清纯学妹", value: "清纯学妹" },
-                    { title: "黑人性奴", value: "黑人性奴" },
                     { title: "熟女少妇", value: "熟女少妇" },
                     { title: "母子通奸", value: "母子通奸" },
                     { title: "出轨偷情", value: "出轨偷情" },
-                    { title: "人兽猎奇", value: "人兽" },
                     { title: "巨乳肥臀", value: "巨乳肥臀" },
                     { title: "黑料吃瓜", value: "黑料吃瓜" },
-                    { title: "AI换脸", value: "AI换脸" },
                     { title: "自慰高潮", value: "自慰高潮" },
+                    { title: "偷窥偷拍", value: "偷窥偷拍" },
+                    { title: "性瘾孕妇", value: "孕妇" },
+                    { title: "萝莉少女", value: "萝莉少女" },
+                    { title: "AI短剧", value: "AI短剧" },
+                    { title: "探花精选", value: "探花" },
+                    { title: "黑人性奴", value: "黑人性奴" },
+                    { title: "人兽猎奇", value: "人兽" },
+                    { title: "AI换脸", value: "AI换脸" },
                     { title: "按摩会所", value: "按摩会所" },
                     { title: "肛交内射", value: "肛交内射" },
-                    { title: "偷窥偷拍", value: "偷窥偷拍" },
-                    { title: "SM调教", value: "SM调教" },
-                    { title: "性瘾孕妇", value: "孕妇" }
+                    { title: "SM调教", value: "SM调教" }
                 ]},
                 { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
             ]
         },
 
         // ==========================================
-        // 全网实时搜索
+        // 🔍 全网实时搜索
         // ==========================================
         {
             title: "全站搜索",
@@ -246,6 +234,14 @@ function formatDuration(sec) {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
+const AD_KEYWORDS = ["迷奸液", "喷雾型迷药", "美国进口迷奸香水", "迷药", "迷情水", "催情粉", "听话水", "乖乖水"];
+
+function isAd(item) {
+    const title = (item && item.title) || "";
+    const content = (item && item.content) || "";
+    return AD_KEYWORDS.some(k => title.includes(k) || content.includes(k));
+}
+
 async function fetchTopicVideos(topicId, page, sort) {
     const p = Math.max(parseInt(page, 10) || 1, 1);
     const s = sort || "video";
@@ -259,7 +255,7 @@ async function fetchTopicVideos(topicId, page, sort) {
         const list = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
         if (!Array.isArray(list)) return [];
 
-        return list.map(item => {
+        return list.filter(item => !isAd(item)).map(item => {
             const cover = item.cover || "";
             const vUrlParam = item.videoUrl ? `&video_url=${encodeURIComponent(item.videoUrl)}` : '';
             const fullLink = `${API_BASE}/awjq_detail?id=${item.id}${vUrlParam}`;
@@ -301,7 +297,7 @@ async function fetchSearchVideos(word, page) {
         const list = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
         if (!Array.isArray(list)) return [];
 
-        return list.map(item => {
+        return list.filter(item => !isAd(item)).map(item => {
             const cover = item.cover || "";
             const vUrlParam = item.videoUrl ? `&video_url=${encodeURIComponent(item.videoUrl)}` : '';
             const fullLink = `${API_BASE}/awjq_detail?id=${item.id}${vUrlParam}`;
@@ -331,10 +327,6 @@ async function fetchSearchVideos(word, page) {
 // ------------------------------------------
 // 独立标签加载函数
 // ------------------------------------------
-async function loadTagDaughter(params) {
-    return await fetchSearchVideos("女儿", params && params.page);
-}
-
 async function loadTagMotherSon(params) {
     return await fetchSearchVideos("母子通奸", params && params.page);
 }
@@ -395,7 +387,7 @@ async function loadTopic57(params) {
 }
 
 async function loadGridTag(params) {
-    const tag = (params && params.tag) || "迷药迷奸";
+    const tag = (params && params.tag) || "清纯学妹";
     return await fetchSearchVideos(tag, params && params.page);
 }
 
