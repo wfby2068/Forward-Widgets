@@ -1,10 +1,10 @@
 var WidgetMetadata = {
-  id: "ti.bemarkt.javday.v141",
-  title: "JAVDay · 1.4.1",
-  description: "JAVDay 原生秒播 · 全分集支持版",
+  id: "ti.bemarkt.javday.v142",
+  title: "JAVDay · 1.4.2",
+  description: "JAVDay 原生秒播 · TV选集修复版",
   author: "Ti",
   site: "https://widgets-xd.vercel.app",
-  version: "1.4.1",
+  version: "1.4.2",
   requiredVersion: "0.0.2",
   detailCacheDuration: 0,
   modules: [
@@ -409,8 +409,9 @@ function getCoverImgSrc($item) {
 
 function buildListItem(index, link, title, imgSrc, description) {
   const cover = imgSrc || "";
+  const isSeries = (description && description.includes("人气系列")) || (link && link.includes("/label/hot/"));
   return {
-    id: `${index}|${link}`,
+    id: link,
     type: "url",
     title: title,
     imgSrc: cover,
@@ -419,7 +420,7 @@ function buildListItem(index, link, title, imgSrc, description) {
     coverUrl: cover,
     link: link,
     description: description,
-    mediaType: "movie",
+    mediaType: isSeries ? "tv" : "movie",
     playerType: "app"
   };
 }
@@ -485,7 +486,8 @@ async function loadPage(params = {}) {
   const page = parseInt(params.page, 10) || 1;
   const pagePath = buildPageUrl(baseUrl, sortBy, page);
   const targetUrl = getFullUrl(pagePath);
-  const desc = "来自JAVDay | 排序:" + (sortBy === "new" ? "最新上架" : "人气最高");
+  const isSeries = (baseUrl && baseUrl.includes("label/hot")) || (pagePath && pagePath.includes("label/hot"));
+  const desc = isSeries ? "来自JAVDay | 人气系列" : ("来自JAVDay | 排序:" + (sortBy === "new" ? "最新上架" : "人气最高"));
 
   try {
     const html = await fetchHtml(targetUrl);
@@ -732,18 +734,19 @@ async function loadDetail(link) {
       const playUrl = selectedEpisode ? selectedEpisode.videoUrl : parsed.playUrl;
       if (/^https?:\/\/[^\s]+\.(?:m3u8|mp4)(?:[?#][^\s]*)?$/i.test(playUrl)) {
         const proxiedPlayUrl = buildProxyM3u8Url(playUrl);
-        const episodesList = episodes.map(ep => ({
+        const isTv = episodes.length > 1;
+        const episodesList = isTv ? episodes.map(ep => ({
           id: ep.id,
-          type: "detail",
+          type: "url",
           title: ep.title,
           link: ep.id,
           videoUrl: buildProxyM3u8Url(ep.videoUrl),
           episode: ep.episode,
-          mediaType: "movie",
+          mediaType: "tv",
           playerType: "app",
           customHeaders: playHeaders,
           headers: playHeaders,
-        }));
+        })) : undefined;
 
         return {
           id: link,
@@ -759,11 +762,12 @@ async function loadDetail(link) {
           link: link,
           customHeaders: playHeaders,
           headers: playHeaders,
-          durationText: episodes.length > 0 ? `全 ${episodes.length} 集` : undefined,
-          mediaType: "movie",
-          episodes: episodesList.length > 0 ? episodesList : undefined,
-          episodeItems: episodesList.length > 0 ? episodesList : undefined,
-          childItems: episodesList.length > 0 ? episodesList : undefined,
+          durationText: isTv ? `全 ${episodes.length} 集` : undefined,
+          mediaType: isTv ? "tv" : "movie",
+          episode: isTv ? episodes.length : undefined,
+          episodes: episodesList,
+          episodeItems: episodesList,
+          childItems: episodesList,
         };
       }
     }
