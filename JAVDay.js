@@ -1,12 +1,12 @@
 var WidgetMetadata = {
-  id: "ti.bemarkt.javday",
-  title: "JAVDay",
-  description: "获取 JAVDay 推荐",
+  id: "ti.bemarkt.javday.v131",
+  title: "JAVDay · 1.3.1",
+  description: "JAVDay 列表与详情 · 分集协议修复版",
   author: "Ti",
   site: "https://widgets-xd.vercel.app",
-  version: "1.3.0",
+  version: "1.3.1",
   requiredVersion: "0.0.2",
-  detailCacheDuration: 3600,
+  detailCacheDuration: 0,
   modules: [
     // 最新模块
     {
@@ -681,11 +681,15 @@ function extractRawPlaylistFromHtml(html, $) {
 }
 
 async function loadDetail(link) {
+  const requestedLink = String(link || "");
+  const episodeMatch = requestedLink.match(/[?&]ep=(\d+)(?:&|#|$)/);
+  const episodeNumber = episodeMatch ? parseInt(episodeMatch[1], 10) : null;
+  const pageLink = requestedLink.replace(/([?&])ep=\d+(&?)/, (_, sep, rest) => rest ? sep : "").replace(/[?&]$/, "");
   try {
-    const response = await Widget.http.get(link, {
+    const response = await Widget.http.get(pageLink, {
       headers: {
         "User-Agent": JAVDAY_USER_AGENT,
-        Referer: link,
+        Referer: pageLink,
       },
     });
 
@@ -693,8 +697,8 @@ async function loadDetail(link) {
       return {
         id: link,
         type: "detail",
-        videoUrl: link,
-        playerType: "system",
+        description: "详情未返回播放数据",
+        playerType: "app",
         link: link
       };
     }
@@ -707,15 +711,21 @@ async function loadDetail(link) {
     const poster = $("meta[property='og:image']").attr("content") || $("video#J_prismPlayer").attr("poster") || "";
 
     const playHeaders = {
-      Referer: link,
+      Referer: pageLink,
       Origin: "https://javday.app",
       "User-Agent": JAVDAY_USER_AGENT,
     };
 
     const rawPlaylist = extractRawPlaylistFromHtml(html, $);
     if (rawPlaylist) {
-      const { playUrl, episodes } = parseJavdayPlaylist(rawPlaylist, link);
-      if (playUrl) {
+      const parsed = parseJavdayPlaylist(rawPlaylist, pageLink);
+      const episodes = parsed.episodes.filter(ep => /^https?:\/\/[^\s]+\.(?:m3u8|mp4)(?:[?#][^\s]*)?$/i.test(ep.videoUrl));
+      const selectedEpisode = episodeMatch ? episodes.find(ep => ep.episode === episodeNumber) : episodes[0];
+      if (episodeMatch && !selectedEpisode) {
+        throw new Error("Requested episode does not exist");
+      }
+      const playUrl = selectedEpisode ? selectedEpisode.videoUrl : parsed.playUrl;
+      if (/^https?:\/\/[^\s]+\.(?:m3u8|mp4)(?:[?#][^\s]*)?$/i.test(playUrl)) {
         return {
           id: link,
           type: "detail",
@@ -730,8 +740,20 @@ async function loadDetail(link) {
           link: link,
           customHeaders: playHeaders,
           headers: playHeaders,
-          durationText: episodes.length > 0 ? `全 ${episodes.length} 集` : undefined,
-          episodes: episodes.length > 0 ? episodes : undefined,
+          durationText: episodes.length > 0 ? `${episodes.length} 个分集` : undefined,
+          mediaType: episodes.length > 0 ? "tv" : "movie",
+          episodeItems: episodes.length > 0 ? episodes.map(ep => ({
+            id: ep.id,
+            type: "detail",
+            title: ep.title,
+            link: ep.id,
+            videoUrl: ep.videoUrl,
+            episode: ep.episode,
+            mediaType: "tv",
+            playerType: "app",
+            customHeaders: playHeaders,
+            headers: playHeaders,
+          })) : undefined,
         };
       }
     }
@@ -739,8 +761,8 @@ async function loadDetail(link) {
     return {
       id: link,
       type: "detail",
-      videoUrl: link,
-      playerType: "system",
+      description: "未解析到有效视频源，请检查模块日志",
+      playerType: "app",
       link: link
     };
   } catch (error) {
@@ -748,8 +770,8 @@ async function loadDetail(link) {
     return {
       id: link,
       type: "detail",
-      videoUrl: link,
-      playerType: "system",
+      description: "未解析到有效视频源，请检查模块日志",
+      playerType: "app",
       link: link
     };
   }
