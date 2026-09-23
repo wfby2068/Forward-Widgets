@@ -141,23 +141,37 @@ function formatDuration(sec) {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
-async function fetchTopicVideos(topicId, page = 1) {
-    const url = `${API_BASE}/awjq_list?topic_id=${topicId}&cate=video&page=${page}&limit=20`;
+async function fetchTopicVideos(topicId, page) {
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const url = `${API_BASE}/awjq_list?topic_id=${topicId}&cate=video&page=${p}&limit=20`;
     try {
-        const res = await fetch(url);
-        const list = await res.json();
+        const response = await Widget.http.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
+            }
+        });
+        const list = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
         if (!Array.isArray(list)) return [];
 
         return list.map(item => {
+            const cover = item.cover || "";
             const vUrlParam = item.videoUrl ? `&video_url=${encodeURIComponent(item.videoUrl)}` : '';
+            const fullLink = `${API_BASE}/awjq_detail?id=${item.id}${vUrlParam}`;
             return {
-                id: String(item.id),
-                title: item.title,
-                cover: item.cover,
+                id: fullLink,
                 type: "url",
-                link: `${API_BASE}/awjq_detail?id=${item.id}${vUrlParam}`,
-                duration: formatDuration(item.duration),
-                badge: item.like_num ? `👍 ${item.like_num}` : undefined
+                title: item.title,
+                imgSrc: cover,
+                posterPath: cover,
+                backdropPath: cover,
+                coverUrl: cover,
+                mediaType: "movie",
+                duration: item.duration || 0,
+                durationText: formatDuration(item.duration),
+                releaseDate: item.created_at || "",
+                link: fullLink,
+                description: item.content || ("暗网禁区 · " + item.title),
+                playerType: "app"
             };
         });
     } catch (e) {
@@ -167,70 +181,83 @@ async function fetchTopicVideos(topicId, page = 1) {
 }
 
 async function loadTopic54(params) {
-    return await fetchTopicVideos(54, params.page || 1);
+    return await fetchTopicVideos(54, params && params.page);
 }
 
 async function loadTopic49(params) {
-    return await fetchTopicVideos(49, params.page || 1);
+    return await fetchTopicVideos(49, params && params.page);
 }
 
 async function loadTopic48(params) {
-    return await fetchTopicVideos(48, params.page || 1);
+    return await fetchTopicVideos(48, params && params.page);
 }
 
 async function loadTopic52(params) {
-    return await fetchTopicVideos(52, params.page || 1);
+    return await fetchTopicVideos(52, params && params.page);
 }
 
 async function loadTopic55(params) {
-    return await fetchTopicVideos(55, params.page || 1);
+    return await fetchTopicVideos(55, params && params.page);
 }
 
 async function loadTopic56(params) {
-    return await fetchTopicVideos(56, params.page || 1);
+    return await fetchTopicVideos(56, params && params.page);
 }
 
 async function loadTopic57(params) {
-    return await fetchTopicVideos(57, params.page || 1);
+    return await fetchTopicVideos(57, params && params.page);
 }
 
 async function loadTopic45(params) {
-    return await fetchTopicVideos(45, params.page || 1);
+    return await fetchTopicVideos(45, params && params.page);
 }
 
 async function loadTopic50(params) {
-    return await fetchTopicVideos(50, params.page || 1);
+    return await fetchTopicVideos(50, params && params.page);
 }
 
 async function loadTopic92(params) {
-    return await fetchTopicVideos(92, params.page || 1);
+    return await fetchTopicVideos(92, params && params.page);
 }
 
 async function loadTopic94(params) {
-    return await fetchTopicVideos(94, params.page || 1);
+    return await fetchTopicVideos(94, params && params.page);
 }
 
 async function searchVideos(params) {
-    const keyword = (params.keyword || "").trim();
-    const page = params.page || 1;
+    const keyword = ((params && params.keyword) || "").trim();
+    const page = Math.max(parseInt(params && params.page, 10) || 1, 1);
     if (!keyword) return [];
 
     const url = `${API_BASE}/awjq_search?word=${encodeURIComponent(keyword)}&page=${page}&limit=20`;
     try {
-        const res = await fetch(url);
-        const list = await res.json();
+        const response = await Widget.http.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
+            }
+        });
+        const list = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
         if (!Array.isArray(list)) return [];
 
         return list.map(item => {
+            const cover = item.cover || "";
             const vUrlParam = item.videoUrl ? `&video_url=${encodeURIComponent(item.videoUrl)}` : '';
+            const fullLink = `${API_BASE}/awjq_detail?id=${item.id}${vUrlParam}`;
             return {
-                id: String(item.id),
-                title: item.title,
-                cover: item.cover,
+                id: fullLink,
                 type: "url",
-                link: `${API_BASE}/awjq_detail?id=${item.id}${vUrlParam}`,
-                duration: formatDuration(item.duration),
-                badge: item.like_num ? `👍 ${item.like_num}` : undefined
+                title: item.title,
+                imgSrc: cover,
+                posterPath: cover,
+                backdropPath: cover,
+                coverUrl: cover,
+                mediaType: "movie",
+                duration: item.duration || 0,
+                durationText: formatDuration(item.duration),
+                releaseDate: "",
+                link: fullLink,
+                description: item.content || ("暗网禁区 · " + item.title),
+                playerType: "app"
             };
         });
     } catch (e) {
@@ -239,26 +266,41 @@ async function searchVideos(params) {
     }
 }
 
-async function loadDetail(url) {
+async function loadDetail(link) {
+    const url = typeof link === "object" && link ? (link.link || link.id || link.url) : String(link || "");
     try {
-        const res = await fetch(url);
-        const detail = await res.json();
+        const response = await Widget.http.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
+            }
+        });
+        const detail = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
 
         const videoUrl = detail.videoUrl;
         if (!videoUrl) {
             throw new Error("视频链接未就绪");
         }
 
+        const cover = detail.cover || "";
         return {
+            id: url,
             type: "detail",
             title: detail.title,
-            cover: detail.cover,
+            description: detail.content || "",
             intro: detail.content || "",
+            posterPath: cover,
+            backdropPath: cover,
+            imgSrc: cover,
+            coverUrl: cover,
             videoUrl: videoUrl,
+            mediaType: "movie",
+            duration: detail.duration || 0,
+            durationText: formatDuration(detail.duration),
             playerType: "app",
             headers: {
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
-            }
+            },
+            link: url
         };
     } catch (e) {
         console.error("loadDetail error:", e);
