@@ -1,10 +1,10 @@
 var WidgetMetadata = {
-  id: "ti.bemarkt.javday.v131",
-  title: "JAVDay · 1.3.1",
-  description: "JAVDay 列表与详情 · 分集协议修复版",
+  id: "ti.bemarkt.javday.v140",
+  title: "JAVDay · 1.4.0",
+  description: "JAVDay 原生秒播 · VPS流代理版",
   author: "Ti",
   site: "https://widgets-xd.vercel.app",
-  version: "1.3.1",
+  version: "1.4.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 0,
   modules: [
@@ -608,6 +608,11 @@ async function search(params = {}) {
   ];
 }
 
+function buildProxyM3u8Url(originalM3u8Url) {
+  if (!originalM3u8Url) return "";
+  return "https://antigravity.6106730.xyz/api/javday_m3u8?url=" + encodeURIComponent(originalM3u8Url);
+}
+
 function parseJavdayPlaylist(rawUrl, link) {
   if (!rawUrl) return { playUrl: "", episodes: [] };
   
@@ -726,10 +731,11 @@ async function loadDetail(link) {
       }
       const playUrl = selectedEpisode ? selectedEpisode.videoUrl : parsed.playUrl;
       if (/^https?:\/\/[^\s]+\.(?:m3u8|mp4)(?:[?#][^\s]*)?$/i.test(playUrl)) {
+        const proxiedPlayUrl = buildProxyM3u8Url(playUrl);
         return {
           id: link,
           type: "detail",
-          videoUrl: playUrl,
+          videoUrl: proxiedPlayUrl,
           title: title || undefined,
           description: desc || undefined,
           posterPath: poster ? toAbsoluteUrl(poster) : undefined,
@@ -747,7 +753,7 @@ async function loadDetail(link) {
             type: "detail",
             title: ep.title,
             link: ep.id,
-            videoUrl: ep.videoUrl,
+            videoUrl: buildProxyM3u8Url(ep.videoUrl),
             episode: ep.episode,
             mediaType: "tv",
             playerType: "app",
