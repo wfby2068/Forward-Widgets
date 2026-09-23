@@ -1,10 +1,10 @@
 var WidgetMetadata = {
-  id: "ti.bemarkt.javday.v140",
-  title: "JAVDay · 1.4.0",
-  description: "JAVDay 原生秒播 · VPS流代理版",
+  id: "ti.bemarkt.javday.v141",
+  title: "JAVDay · 1.4.1",
+  description: "JAVDay 原生秒播 · 全分集支持版",
   author: "Ti",
   site: "https://widgets-xd.vercel.app",
-  version: "1.4.0",
+  version: "1.4.1",
   requiredVersion: "0.0.2",
   detailCacheDuration: 0,
   modules: [
@@ -732,6 +732,19 @@ async function loadDetail(link) {
       const playUrl = selectedEpisode ? selectedEpisode.videoUrl : parsed.playUrl;
       if (/^https?:\/\/[^\s]+\.(?:m3u8|mp4)(?:[?#][^\s]*)?$/i.test(playUrl)) {
         const proxiedPlayUrl = buildProxyM3u8Url(playUrl);
+        const episodesList = episodes.map(ep => ({
+          id: ep.id,
+          type: "detail",
+          title: ep.title,
+          link: ep.id,
+          videoUrl: buildProxyM3u8Url(ep.videoUrl),
+          episode: ep.episode,
+          mediaType: "movie",
+          playerType: "app",
+          customHeaders: playHeaders,
+          headers: playHeaders,
+        }));
+
         return {
           id: link,
           type: "detail",
@@ -746,20 +759,11 @@ async function loadDetail(link) {
           link: link,
           customHeaders: playHeaders,
           headers: playHeaders,
-          durationText: episodes.length > 0 ? `${episodes.length} 个分集` : undefined,
-          mediaType: episodes.length > 0 ? "tv" : "movie",
-          episodeItems: episodes.length > 0 ? episodes.map(ep => ({
-            id: ep.id,
-            type: "detail",
-            title: ep.title,
-            link: ep.id,
-            videoUrl: buildProxyM3u8Url(ep.videoUrl),
-            episode: ep.episode,
-            mediaType: "tv",
-            playerType: "app",
-            customHeaders: playHeaders,
-            headers: playHeaders,
-          })) : undefined,
+          durationText: episodes.length > 0 ? `全 ${episodes.length} 集` : undefined,
+          mediaType: "movie",
+          episodes: episodesList.length > 0 ? episodesList : undefined,
+          episodeItems: episodesList.length > 0 ? episodesList : undefined,
+          childItems: episodesList.length > 0 ? episodesList : undefined,
         };
       }
     }
