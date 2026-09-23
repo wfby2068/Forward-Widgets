@@ -5,6 +5,7 @@ var WidgetMetadata = {
     author: "婉儿",
     site: "https://awjq.cc",
     version: "2.2.0",
+    requiredVersion: "0.0.2",
     detailCacheDuration: 0,
     modules: [
         // ==========================================
