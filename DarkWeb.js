@@ -4,7 +4,7 @@ var WidgetMetadata = {
     description: "暗网禁区 (AWJQ) 官方全版块原汁原味直连解析",
     author: "婉儿",
     site: "https://awjq.cc",
-    version: "2.4.0",
+    version: "2.4.1",
     requiredVersion: "0.0.2",
     detailCacheDuration: 0,
     modules: [
@@ -105,21 +105,6 @@ var WidgetMetadata = {
             ]
         },
         {
-            title: "破处回忆",
-            description: "官方版块 [Topic 48] 破处女孩初体验 (881+ 视频)",
-            requiresWebView: false,
-            functionName: "loadTopic48",
-            cacheDuration: 3600,
-            params: [
-                { name: "sort", title: "排序筛选", type: "enumeration", description: "排序方式", value: "hot", enumOptions: [
-                    { title: "热度最高", value: "hot" },
-                    { title: "最近更新", value: "new" },
-                    { title: "App默认专区", value: "video" }
-                ]},
-                { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
-            ]
-        },
-        {
             title: "SM分享",
             description: "官方版块 [Topic 45] 重口与主奴极度服从 (1202+ 视频)",
             requiresWebView: false,
@@ -197,7 +182,6 @@ var WidgetMetadata = {
                     { title: "熟女韵味 (2977)", value: "55" },
                     { title: "自拍分享 (13063)", value: "56" },
                     { title: "明星大咖黑料 (3171)", value: "52" },
-                    { title: "破处回忆 (881)", value: "48" },
                     { title: "SM分享 (1202)", value: "45" },
                     { title: "同城求偶 (2725)", value: "53" },
                     { title: "暗网杂谈 (1357)", value: "50" },
@@ -355,10 +339,6 @@ async function loadTopic56(params) {
 
 async function loadTopic52(params) {
     return await fetchTopicVideos(52, params && params.page, (params && params.sort) || "hot");
-}
-
-async function loadTopic48(params) {
-    return await fetchTopicVideos(48, params && params.page, (params && params.sort) || "hot");
 }
 
 async function loadTopic45(params) {
