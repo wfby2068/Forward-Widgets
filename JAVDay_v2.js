@@ -4,7 +4,7 @@ var WidgetMetadata = {
   description: "JAVDay 原生秒播 · TV选集修复版 · 维护页识别",
   author: "Ti | 婉儿升级",
   site: "https://javday.app",
-  version: "2.0.0",
+  version: "2.0.1",
   requiredVersion: "0.0.2",
   detailCacheDuration: 0,
   modules: [
