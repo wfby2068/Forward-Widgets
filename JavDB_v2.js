@@ -1,10 +1,10 @@
 var WidgetMetadata = {
   id: "ti.bemarkt.javdb.v2",
   title: "JavDB",
-  description: "获取 JavDB 最新/热门影片推荐与番号检索 (v2 标准规范版)",
+  description: "获取 JavDB 最新/热门影片推荐、片商榜与番号检索；分类/演员/片商 chip 直达真实片单",
   author: "婉儿 (Waner)",
   site: "https://javdb.com",
-  version: "2.0.0",
+  version: "2.1.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 300,
   modules: [
@@ -42,7 +42,7 @@ var WidgetMetadata = {
     },
     {
       title: "无码专区",
-      description: "浏览最新无码影片",
+      description: "無碼标签检索（原 /uncensored 专页已改为需登入，此处走公开标签检索）",
       requiresWebView: false,
       functionName: "loadPage",
       cacheDuration: 1800,
@@ -51,7 +51,7 @@ var WidgetMetadata = {
           name: "url",
           title: "列表地址",
           type: "constant",
-          value: "https://javdb.com/uncensored"
+          value: "https://javdb.com/search?q=%E7%84%A1%E7%A2%BC&f=tag"
         },
         { name: "page", title: "页码", type: "page", value: "1" }
       ]
@@ -68,6 +68,90 @@ var WidgetMetadata = {
           title: "列表地址",
           type: "constant",
           value: "https://javdb.com/western"
+        },
+        { name: "page", title: "页码", type: "page", value: "1" }
+      ]
+    },
+    {
+      title: "中文字幕",
+      description: "中文字幕标签检索",
+      requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 1800,
+      params: [
+        {
+          name: "url",
+          title: "列表地址",
+          type: "constant",
+          value: "https://javdb.com/search?q=%E4%B8%AD%E6%96%87%E5%AD%97%E5%B9%95&f=tag"
+        },
+        { name: "page", title: "页码", type: "page", value: "1" }
+      ]
+    },
+    {
+      title: "片商专区",
+      description: "JavDB 有码片商榜（含作品数，可滑动选择）",
+      requiresWebView: false,
+      functionName: "loadMaker",
+      cacheDuration: 3600,
+      params: [
+        {
+          name: "path",
+          title: "片商",
+          type: "enumeration",
+          value: "/makers/7R",
+          enumOptions: [
+            { title: "S1 NO.1 STYLE (8326)", value: "/makers/7R" },
+            { title: "MOODYZ (11558)", value: "/makers/zKW" },
+            { title: "FALENO (1340)", value: "/makers/Y46" },
+            { title: "蚊香社, PRESTIGE,プレステージ (13301)", value: "/makers/6M" },
+            { title: "IDEA POCKET (5711)", value: "/makers/ZXX" },
+            { title: "kawaii (2875)", value: "/makers/rmZ" },
+            { title: "E-BODY (2094)", value: "/makers/bgA" },
+            { title: "マドンナ(Madonna) (9553)", value: "/makers/35e" },
+            { title: "Attackers (5080)", value: "/makers/Ywz" },
+            { title: "ワンズファクトリー (4428)", value: "/makers/333" },
+            { title: "溜池ゴロー (2573)", value: "/makers/Ww7" },
+            { title: "OPPAI (1862)", value: "/makers/p3k" },
+            { title: "プレミアム (2553)", value: "/makers/8Xd" },
+            { title: "Fitch (2738)", value: "/makers/Aby" },
+            { title: "SOD Create (13434)", value: "/makers/q6" },
+            { title: "KMP, ケイ・エム・プロデュース (14279)", value: "/makers/8V9" },
+            { title: "Centervillage, センタービレッジ (7090)", value: "/makers/nw" },
+            { title: "水晶映像, クリスタル映像 (6370)", value: "/makers/KQ" },
+            { title: "ルビー (6074)", value: "/makers/my" },
+            { title: "桃太郎映像出版 (5807)", value: "/makers/pk" },
+            { title: "パラダイステレビ (5497)", value: "/makers/Yp8" },
+            { title: "Glory Quest (5142)", value: "/makers/W17" },
+            { title: "アリスJAPAN (5116)", value: "/makers/J2x" },
+            { title: "ビッグモーカル (5068)", value: "/makers/mey" },
+            { title: "タカラ映像 (4912)", value: "/makers/ZNX" },
+            { title: "シロウトTV (4768)", value: "/makers/9Mw" },
+            { title: "h.m.p (4592)", value: "/makers/xZg" },
+            { title: "STAR PARADISE (4400)", value: "/makers/BO" },
+            { title: "Hunter (4172)", value: "/makers/2Vm" },
+            { title: "GIGA (4078)", value: "/makers/r3k" },
+            { title: "ナチュラルハイ (3982)", value: "/makers/gZ" },
+            { title: "ディープス (3807)", value: "/makers/D8" },
+            { title: "なでしこ (3694)", value: "/makers/rZ" },
+            { title: "VENUS (3687)", value: "/makers/OXz" },
+            { title: "セレブの友 (3676)", value: "/makers/deB" },
+            { title: "アイエナジー (3468)", value: "/makers/W7" },
+            { title: "ワープエンタテインメント (3346)", value: "/makers/e1" },
+            { title: "プレステージプレミアム(PRESTIGE PREMIUM) (3114)", value: "/makers/Qap" },
+            { title: "オルスタックピクチャーズ (3103)", value: "/makers/89" },
+            { title: "マキシング (2904)", value: "/makers/eBr" },
+            { title: "マックスエー (2867)", value: "/makers/96p" },
+            { title: "TMA (2865)", value: "/makers/7yV" },
+            { title: "映天 (2761)", value: "/makers/bd" },
+            { title: "S級素人 (2757)", value: "/makers/pN5" },
+            { title: "プラネットプラス (2690)", value: "/makers/JVq" },
+            { title: "ナンパTV (2670)", value: "/makers/WqZ" },
+            { title: "Dogma (2661)", value: "/makers/zkz" },
+            { title: "AVS (2595)", value: "/makers/363" },
+            { title: "グローバルメディアエンタテインメント (2542)", value: "/makers/65M" },
+            { title: "NEXT GROUP (2527)", value: "/makers/Nb" }
+          ]
         },
         { name: "page", title: "页码", type: "page", value: "1" }
       ]
@@ -123,24 +207,61 @@ const JAVDB_HEADERS = {
   "Referer": "https://javdb.com/"
 };
 
-async function loadPage(params = {}) {
-  const baseUrl = params.url || "https://javdb.com/";
-  const page = parseInt(params.page, 10) || 1;
-  let url = baseUrl;
-  if (page > 1) {
-    url += (url.includes("?") ? "&" : "?") + `page=${page}`;
+// JavDB 站点对未登录访客收紧：/uncensored、/tags、/actors/<id> 只回少量或登入页。
+// 因此 chip 一律改写成「公开且内容完整」的路由：
+//   标签/类别 -> /search?q=<名称>&f=tag     演员 -> /search?q=<名称>&f=all
+//   片商      -> /makers/<id>               系列 -> /series/<id>   监督 -> /directors/<id>
+function resolveChipTarget(params) {
+  const p = params || {};
+  const raw = p.genreId || p.tagId || p.peopleId || p.actressId || p.makerId || p.seriesId || p.directorId || "";
+  if (!raw) return null;
+  let v = String(raw).trim();
+  if (!v) return null;
+  try { v = decodeURIComponent(v); } catch (e) {}
+
+  if (/^https?:\/\//i.test(v)) {
+    const m = v.match(/javdb\.com(\/[^\s]*)/i);
+    if (!m) return null;
+    v = m[1];
   }
 
+  const pref = v.match(/^([A-Za-z]+):(.+)$/);
+  if (pref) {
+    const kind = pref[1].toLowerCase();
+    const val = pref[2].trim();
+    if (!val) return null;
+    const name = val.split("|")[0].trim();
+    if (kind === "genre" || kind === "tag" || kind === "category") {
+      return { url: `${JAVDB_BASE_URL}/search?q=${encodeURIComponent(name)}&f=tag`, label: name };
+    }
+    if (kind === "actress" || kind === "actor" || kind === "people") {
+      return { url: `${JAVDB_BASE_URL}/search?q=${encodeURIComponent(name)}&f=all`, label: name };
+    }
+    if (kind === "maker" || kind === "studio" || kind === "series" || kind === "director") {
+      const seg = kind === "studio" ? "makers" : (kind + "s");
+      const id = name;
+      const label = (val.split("|")[1] || id).trim();
+      return { url: `${JAVDB_BASE_URL}/${seg}/${id}`, label: label };
+    }
+    return null;
+  }
+
+  if (/^\/(search\?|makers\/|series\/|directors\/|censored|western|rankings\/|\?v=new)/.test(v) || v === "/") {
+    return { url: `${JAVDB_BASE_URL}${v}`, label: "" };
+  }
+  return null;
+}
+
+async function fetchJavList(url) {
   try {
     const response = await Widget.http.get(url, {
       headers: JAVDB_HEADERS,
       allow_redirects: true
     });
-
     if (!response || !response.data) {
+      console.warn(`${JAVDB_LOG_PREFIX} 空响应 ${url}`);
       return [];
     }
-
     return parseJavDBList(response.data);
   } catch (error) {
     console.error(`${JAVDB_LOG_PREFIX} 获取列表失败: ${error.message}`);
@@ -148,7 +269,32 @@ async function loadPage(params = {}) {
   }
 }
 
+async function loadPage(params = {}) {
+  const chip = resolveChipTarget(params);
+  if (chip) return fetchJavList(chip.url);
+
+  const baseUrl = params.url || "https://javdb.com/";
+  const page = parseInt(params.page, 10) || 1;
+  let url = baseUrl;
+  if (page > 1) {
+    url += (url.includes("?") ? "&" : "?") + `page=${page}`;
+  }
+  return fetchJavList(url);
+}
+
+async function loadMaker(params = {}) {
+  const p = params || {};
+  const path = String(p.path || "/makers/7R");
+  const page = parseInt(p.page, 10) || 1;
+  if (!/^\/makers\/[\w\-]+$/.test(path)) return [];
+  let url = `${JAVDB_BASE_URL}${path}`;
+  if (page > 1) url += `?page=${page}`;
+  return fetchJavList(url);
+}
+
 async function loadRankings(params = {}) {
+  const chip = resolveChipTarget(params);
+  if (chip) return fetchJavList(chip.url);
   const period = (params && params.period) || "daily";
   const page = parseInt(params && params.page, 10) || 1;
   let path = "/rankings/movies";
@@ -173,6 +319,8 @@ async function loadRankings(params = {}) {
 }
 
 async function searchGlobal(params = {}) {
+  const chip = resolveChipTarget(params);
+  if (chip) return fetchJavList(chip.url);
   const keyword = (params && params.keyword) ? String(params.keyword).trim() : "";
   const page = parseInt(params && params.page, 10) || 1;
   if (!keyword) return [];
@@ -457,7 +605,7 @@ async function buildPeoplesWithAvatars(actorsList, dvdId) {
     seen.add(name);
 
     let avatar = typeof a === "object" ? (a.avatar || a.image || "") : "";
-    const id = typeof a === "object" && a.link ? a.link : `actress:${encodeURIComponent(name)}`;
+    const id = `actress:${encodeURIComponent(name)}`;
     
     // 如果没有自带头像，尝试异步解析头像
     if (!avatar) {
@@ -484,7 +632,7 @@ function buildGenreItems(tagsList) {
     const title = typeof t === "string" ? t.trim() : (t.title || t.name || "").trim();
     if (!title || seen.has(title)) continue;
     seen.add(title);
-    const id = typeof t === "object" && t.link ? t.link : `genre:${encodeURIComponent(title)}`;
+    const id = `genre:${encodeURIComponent(title)}`;
     items.push({ id, title });
   }
   return items;
@@ -516,6 +664,7 @@ async function loadDetail(link) {
     let code = "";
     const actors = [];
     const tags = [];
+    const staff = [];
 
     $(".movie-panel-info .panel-block").each((_, block) => {
       const text = $(block).text();
@@ -533,6 +682,21 @@ async function loadDetail(link) {
             actors.push({ name, link: href.startsWith("http") ? href : `https://javdb.com${href}` });
           }
         });
+      }
+      const staffHit = [
+        ["片商:", "maker", "/makers/"],
+        ["系列:", "series", "/series/"],
+        ["監督:", "director", "/directors/"],
+        ["导演:", "director", "/directors/"]
+      ].find(pair => text.includes(pair[0]));
+      if (staffHit) {
+        const $a = $(block).find(`a[href*='${staffHit[2]}']`).first();
+        const nm = $a.text().trim();
+        const hr = $a.attr("href") || "";
+        const idm = hr.match(/\/(?:makers|series|directors)\/([\w\-]+)/);
+        if (nm && idm && !staff.find(x => x.id === `${staffHit[1]}:${idm[1]}`)) {
+          staff.push({ id: `${staffHit[1]}:${idm[1]}`, title: nm });
+        }
       }
       if (text.includes("類別:") || text.includes("类别:") || text.includes("標籤:") || text.includes("标签:")) {
         $(block).find("a").each((_, a) => {
@@ -564,6 +728,7 @@ async function loadDetail(link) {
     const trailers = dvdId ? buildJavTrailers(dvdId.dvdId) : undefined;
     const peoples = await buildPeoplesWithAvatars(actors, dvdId ? dvdId.dvdId : "");
     const genreItems = buildGenreItems(tags);
+    staff.forEach(x => { if (!genreItems.find(g => g.id === x.id)) genreItems.push(x); });
 
     return {
       id: url,
