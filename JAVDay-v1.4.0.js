@@ -1,10 +1,10 @@
 var WidgetMetadata = {
-  id: "ti.bemarkt.javday.v140",
-  title: "JAVDay · 1.4.0",
-  description: "JAVDay 原生秒播 · VPS流代理版",
+  id: "ti.bemarkt.javday.v142",
+  title: "JAVDay · 1.4.3",
+  description: "JAVDay 原生秒播 · TV选集修复版 · 维护页识别",
   author: "Ti",
   site: "https://widgets-xd.vercel.app",
-  version: "1.4.0",
+  version: "1.4.3",
   requiredVersion: "0.0.2",
   detailCacheDuration: 0,
   modules: [
@@ -409,8 +409,9 @@ function getCoverImgSrc($item) {
 
 function buildListItem(index, link, title, imgSrc, description) {
   const cover = imgSrc || "";
+  const isSeries = (description && description.includes("人气系列")) || (link && link.includes("/label/hot/"));
   return {
-    id: `${index}|${link}`,
+    id: link,
     type: "url",
     title: title,
     imgSrc: cover,
@@ -419,7 +420,7 @@ function buildListItem(index, link, title, imgSrc, description) {
     coverUrl: cover,
     link: link,
     description: description,
-    mediaType: "movie",
+    mediaType: isSeries ? "tv" : "movie",
     playerType: "app"
   };
 }
@@ -442,9 +443,24 @@ function extractVideoUrlFromDPlayerScript(scriptContent) {
   return null;
 }
 
+function isMaintenanceHtml(html) {
+  if (!html) return false;
+  const text = String(html);
+  return (
+    text.includes("服務暫時中斷") ||
+    text.includes("服务暂时中断") ||
+    text.includes("暫時中斷") ||
+    text.includes("站点维护") ||
+    text.includes("維護中") ||
+    text.includes("维护中") ||
+    text.includes("Service Temporarily Unavailable")
+  );
+}
+
 function isBlockedHtml(html) {
   if (!html) return true;
   const text = String(html);
+  if (isMaintenanceHtml(text)) return true;
   return text.includes("Just a moment") || text.includes("cf-mitigated") || text.includes("Performing security verification") || text.length < 2000;
 }
 
@@ -485,10 +501,14 @@ async function loadPage(params = {}) {
   const page = parseInt(params.page, 10) || 1;
   const pagePath = buildPageUrl(baseUrl, sortBy, page);
   const targetUrl = getFullUrl(pagePath);
-  const desc = "来自JAVDay | 排序:" + (sortBy === "new" ? "最新上架" : "人气最高");
+  const isSeries = (baseUrl && baseUrl.includes("label/hot")) || (pagePath && pagePath.includes("label/hot"));
+  const desc = isSeries ? "来自JAVDay | 人气系列" : ("来自JAVDay | 排序:" + (sortBy === "new" ? "最新上架" : "人气最高"));
 
   try {
     const html = await fetchHtml(targetUrl);
+    if (isMaintenanceHtml(html)) {
+      return [buildListItem(0, "https://javday.app/", "JAVDay 站点维护中，稍后再试", "", desc)];
+    }
     if (isBlockedHtml(html)) {
       return [buildListItem(0, "https://javday.app/", "页面被拦截，请稍后重试", "", desc)];
     }
@@ -527,6 +547,22 @@ async function search(params = {}) {
   const desc = `搜索: ${keyword}`;
 
   const urls = [];
+
+  // 1. 如果搜索词包含中文/日文（女优名/演员名/标签），优先走女优/演员与标签专页（绕过 CF 验证并精准匹配）
+  const isActorOrText = !code && !/^[A-Za-z0-9\s\-]+$/.test(keyword);
+  if (isActorOrText) {
+    urls.push(
+      page === 1
+        ? `https://javday.app/search/actor/${encoded}/`
+        : `https://javday.app/search/actor/${encoded}/page/${page}/`
+    );
+    urls.push(
+      page === 1
+        ? `https://javday.app/search/tag/${encoded}/`
+        : `https://javday.app/search/tag/${encoded}/page/${page}/`
+    );
+  }
+
   if (page === 1 && code) {
     urls.push(`https://javday.app/videos/${code.compact}/`);
     urls.push(`https://javday.app/videos/${code.dashed}/`);
@@ -544,6 +580,10 @@ async function search(params = {}) {
   for (const url of urls) {
     try {
       const html = await fetchHtml(url);
+      if (isMaintenanceHtml(html)) {
+        lastError = "search-maintenance";
+        continue;
+      }
       if (isBlockedHtml(html)) {
         lastError = "search-blocked";
         continue;
@@ -597,13 +637,14 @@ async function search(params = {}) {
   }
 
   console.error(`${JAVDAY_LOG_PREFIX} 搜索失败: ${lastError && lastError.message ? lastError.message : lastError}`);
+  const siteDown = lastError === "search-maintenance";
   return [
     buildListItem(
       0,
       "https://javday.app/",
-      "搜索被拦截，请改用番号直达或稍后再试",
+      siteDown ? "JAVDay 站点维护中，稍后再试" : "搜索被拦截，请改用番号直达或稍后再试",
       "",
-      "JAVDay 搜索页有 Cloudflare 验证，番号可试 ABF-370 这种格式"
+      siteDown ? "上游站点当前返回维护页，恢复后即可正常搜索" : "JAVDay 搜索页有 Cloudflare 验证，番号可试 ABF-370 这种格式"
     ),
   ];
 }
@@ -709,6 +750,15 @@ async function loadDetail(link) {
     }
 
     const html = String(response.data);
+    if (isMaintenanceHtml(html)) {
+      return {
+        id: link,
+        type: "detail",
+        description: "JAVDay 站点维护中，稍后再试",
+        playerType: "app",
+        link: link
+      };
+    }
     const $ = Widget.html.load(html);
     
     const title = ($("h1.video-title").text() || $("h1").first().text() || $("title").text() || "").trim();
@@ -732,6 +782,20 @@ async function loadDetail(link) {
       const playUrl = selectedEpisode ? selectedEpisode.videoUrl : parsed.playUrl;
       if (/^https?:\/\/[^\s]+\.(?:m3u8|mp4)(?:[?#][^\s]*)?$/i.test(playUrl)) {
         const proxiedPlayUrl = buildProxyM3u8Url(playUrl);
+        const isTv = episodes.length > 1;
+        const episodesList = isTv ? episodes.map(ep => ({
+          id: ep.id,
+          type: "url",
+          title: ep.title,
+          link: ep.id,
+          videoUrl: buildProxyM3u8Url(ep.videoUrl),
+          episode: ep.episode,
+          mediaType: "tv",
+          playerType: "app",
+          customHeaders: playHeaders,
+          headers: playHeaders,
+        })) : undefined;
+
         return {
           id: link,
           type: "detail",
@@ -746,20 +810,12 @@ async function loadDetail(link) {
           link: link,
           customHeaders: playHeaders,
           headers: playHeaders,
-          durationText: episodes.length > 0 ? `${episodes.length} 个分集` : undefined,
-          mediaType: episodes.length > 0 ? "tv" : "movie",
-          episodeItems: episodes.length > 0 ? episodes.map(ep => ({
-            id: ep.id,
-            type: "detail",
-            title: ep.title,
-            link: ep.id,
-            videoUrl: buildProxyM3u8Url(ep.videoUrl),
-            episode: ep.episode,
-            mediaType: "tv",
-            playerType: "app",
-            customHeaders: playHeaders,
-            headers: playHeaders,
-          })) : undefined,
+          durationText: isTv ? `全 ${episodes.length} 集` : undefined,
+          mediaType: isTv ? "tv" : "movie",
+          episode: isTv ? episodes.length : undefined,
+          episodes: episodesList,
+          episodeItems: episodesList,
+          childItems: episodesList,
         };
       }
     }
