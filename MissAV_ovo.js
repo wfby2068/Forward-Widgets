@@ -3,7 +3,7 @@ var WidgetMetadata = {
     title: "MissAV_ovo",
     author: "𝙈𝙖𝙠𝙠𝙖𝙋𝙖𝙠𝙠𝙖|CC|EL|Eric|墨白",
     description: "MissAV 视频聚合模块；3.6 搜索空白时回退最近更新，避免空页",
-    version: "3.6",
+    version: "3.7",
     requiredVersion: "0.0.2",
     site: "https://missav.fans",
     modules: [
@@ -2017,9 +2017,127 @@ async function fetchJavTrailersMeta(dvdId) {
     }
 }
 
+function withPageParam(url, page) {
+    const target = String(url || "").trim();
+    if (!target) return "";
+    if (!page || page <= 1) return target;
+    return `${target}${target.includes("?") ? "&" : "?"}page=${page}`;
+}
+
+// 详情页女优常写成「风见渚月 (風見渚月)」，括号里是原名，可作为备用搜索词
+function extractAliasName(name) {
+    const m = String(name || "").match(/[（(]([^（()）]+)[)）]/);
+    return m ? m[1].trim() : "";
+}
+
+// 点击详情页女优 / 标签 chip 时 Forward 回传的是 chip 的 id。
+// 列表模块必须按 id 打开对应片单：先试片单页，再退到站内搜索；
+// 绝不允许拿不到结果时回退到「最近更新」，否则会显示无关的最新片。
+function buildIdListCandidates(idValue, page, isPeople = true) {
+    const raw = String(idValue || "").trim();
+    if (!raw) return [];
+    const out = [];
+    const push = (u) => {
+        const v = String(u || "").trim();
+        if (v && !out.includes(v)) out.push(v);
+    };
+
+    const bare = raw.replace(/^https?:\/\/[^/]+\//i, "").replace(/^\/+/, "").split("?")[0].replace(/\/$/, "");
+    const last = bare.split("/").pop() || "";
+    let name = last;
+    try {
+        name = decodeURIComponent(last);
+    } catch (e) {
+        name = last;
+    }
+
+    if (/^https?:\/\//i.test(raw)) {
+        push(withPageParam(raw.split("?")[0], page));
+    } else {
+        push(withPageParam(resolveUrl(bare), page));
+    }
+
+    if (isPeople && name) {
+        push(withPageParam(`${BASE_URL}/cn/search/${encodeURIComponent(name)}`, page));
+        const alias = extractAliasName(name);
+        if (alias) push(withPageParam(`${BASE_URL}/cn/search/${encodeURIComponent(alias)}`, page));
+    }
+    return out;
+}
+
+async function loadIdList(idValue, options = {}) {
+    const page = options.page || 1;
+    const isPeople = options.isPeople !== false;
+
+    const raw = String(idValue || "").trim();
+    const bare = raw.replace(/^https?:\/\/[^/]+\//i, "").replace(/^\/+/, "").split("?")[0].replace(/\/$/, "");
+    let label = bare.split("/").pop() || "";
+    try {
+        label = decodeURIComponent(label);
+    } catch (e) {
+        /* keep raw label */
+    }
+    if (!label) label = raw;
+
+    const candidates = buildIdListCandidates(raw, page, isPeople);
+    let chosenHtml = "";
+    let sawBlocked = false;
+
+    for (const candidate of candidates) {
+        const attempt = await fetchHtmlWithRetry(candidate, { retries: 2, headers: HEADERS });
+        if (attempt.error && !attempt.html) continue;
+        if (attempt.blocked) {
+            sawBlocked = true;
+            continue;
+        }
+        if (!attempt.html) continue;
+        if (!chosenHtml) chosenHtml = attempt.html;
+        if (listCardElements(Widget.html.load(attempt.html)).length > 0) {
+            chosenHtml = attempt.html;
+            break;
+        }
+    }
+
+    if (!chosenHtml) {
+        if (sawBlocked) return [buildStatusItem("err_cf", "被 Cloudflare 拦截", "片单未通过验证，请稍后重试")];
+        return [buildStatusItem("err", "加载失败", "片单请求失败，请稍后重试")];
+    }
+
+    let currentPeople = null;
+    let currentGenre = null;
+
+    if (isPeople) {
+        const peopleId = normalizePeopleId(bare);
+        if (!PEOPLE_AVATAR_CACHE[peopleId]) {
+            const pageAvatar = resolveAvatarImageUrl(pickFirstAvatar(Widget.html.load(chosenHtml)));
+            if (pageAvatar) PEOPLE_AVATAR_CACHE[peopleId] = pageAvatar;
+            else {
+                const resolved = await resolvePeopleAvatar(peopleId);
+                if (resolved) PEOPLE_AVATAR_CACHE[peopleId] = resolved;
+            }
+        }
+        currentPeople = buildPeopleContext(peopleId, label, PEOPLE_AVATAR_CACHE[peopleId] || "");
+    } else {
+        currentGenre = buildGenreContext(normalizeGenreId(bare), label);
+    }
+
+    const list = await parseVideoList(chosenHtml, { currentPeople, currentGenre });
+    if (list.length && list[0] && list[0].type === "link") return list;
+
+    return [
+        buildStatusItem(
+            "empty",
+            `暂未收录「${label}」`,
+            isPeople ? "当前镜像没有这位女优的作品，可在搜索里试试别名" : "当前镜像没有这个标签的影片"
+        )
+    ];
+}
+
 async function loadRecentUpdates(params = {}) {
     const { page = 1, sort_by = "published_at" } = params;
-    return loadList({ primary_category: RECENT_UPDATES_CATEGORY, page, sort_by });
+    // 关键：peopleId / genreId 必须原样透传，
+    // 否则点女优 chip 会丢掉 id 并退回「最近更新」列表（显示无关最新片）。
+    return loadList({ ...params, primary_category: RECENT_UPDATES_CATEGORY, page, sort_by });
 }
 
 async function loadList(params = {}) {
@@ -2028,15 +2146,12 @@ async function loadList(params = {}) {
     const targetEndpoint = resolveEndpointByPrimaryCategory(primary_category, endpoint);
     const targetSort = isRecentUpdatesCategory(primary_category) ? (sort_by || "published_at") : sort_by;
 
-    let targetUrl = buildListUrl(targetEndpoint, page, filters, targetSort);
-
-    if (peopleId) {
-        targetUrl = resolveUrl(String(peopleId));
-        if (page > 1) targetUrl += targetUrl.includes("?") ? `&page=${page}` : `?page=${page}`;
-    } else if (genreId) {
-        targetUrl = resolveUrl(String(genreId));
-        if (page > 1) targetUrl += targetUrl.includes("?") ? `&page=${page}` : `?page=${page}`;
+    const listTargetId = peopleId || genreId;
+    if (listTargetId) {
+        return await loadIdList(listTargetId, { page, isPeople: !!peopleId });
     }
+
+    let targetUrl = buildListUrl(targetEndpoint, page, filters, targetSort);
 
     try {
         const currentPeopleId = peopleId ? normalizePeopleId(peopleId) : "";
@@ -2079,6 +2194,12 @@ async function loadList(params = {}) {
 async function searchList(params = {}) {
     const { page = 1, keyword } = params;
 
+    // 搜索结果卡片上的女优 / 标签 chip 同样会回传 id，必须按 id 打开片单
+    const chipId = params.peopleId || params.people_id || params.actorId || params.genreId || params.genre_id;
+    if (chipId) {
+        return await loadIdList(chipId, { page, isPeople: !!(params.peopleId || params.people_id || params.actorId) });
+    }
+
     if (!String(keyword || "").trim()) {
         return loadRecentUpdates({ page });
     }
@@ -2103,6 +2224,11 @@ async function searchList(params = {}) {
 
 async function searchGlobal(params = {}) {
     const { page = 1, keyword } = params;
+
+    const chipId = params.peopleId || params.people_id || params.actorId || params.genreId || params.genre_id;
+    if (chipId) {
+        return await loadIdList(chipId, { page, isPeople: !!(params.peopleId || params.people_id || params.actorId) });
+    }
 
     if (!String(keyword || "").trim()) {
         return loadRecentUpdates({ page });
@@ -2457,7 +2583,7 @@ async function loadDetail(link) {
         // 回退推荐视频请求：提前发起，与 JavTrailers 并行
         const fallbackItemsPromise = (relatedItems.length === 0 && peoples.length > 0)
             ? loadList({ peopleId: peoples[0].id, page: 1 })
-                .then(f => Array.isArray(f) ? f.filter(v => extractVideoId(v.id) !== extractVideoId(link)).slice(0, 8) : [])
+                .then(f => Array.isArray(f) ? f.filter(v => v && v.type === "link" && extractVideoId(v.id) !== extractVideoId(link)).slice(0, 8) : [])
                 .catch(() => [])
             : Promise.resolve(relatedItems);
 
