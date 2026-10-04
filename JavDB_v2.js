@@ -1,10 +1,10 @@
 var WidgetMetadata = {
   id: "ti.bemarkt.javdb.v2",
   title: "JavDB",
-  description: "获取 JavDB 最新/热门影片推荐、片商榜与番号检索；分类/演员/片商 chip 直达真实片单",
+  description: "获取 JavDB 最新/热门影片推荐、片商榜与番号检索；分类/演员/片商 chip 直达真实片单；详情页自动解析正片流（站内仅有预告）",
   author: "婉儿 (Waner)",
   site: "https://javdb.com",
-  version: "2.1.0",
+  version: "2.2.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 300,
   modules: [
@@ -179,12 +179,14 @@ var WidgetMetadata = {
     },
     {
       id: "loadResource",
-      title: "JavDB 播放源",
-      description: "番号与预览视频流解析",
+      title: "正片直连解析",
+      description: "输入番号（如 MIUM-1485），返回可直连播放的正片流",
       functionName: "loadResource",
       type: "stream",
       cacheDuration: 0,
-      params: []
+      params: [
+        { name: "code", title: "番号", type: "input", value: "" }
+      ]
     }
   ],
   search: {
@@ -206,6 +208,43 @@ const JAVDB_HEADERS = {
   "Cookie": "over18=1; locale=zh; theme=auto",
   "Referer": "https://javdb.com/"
 };
+
+// 站内只有预告流，正片流由后台按番号解析（MissAV 源）；未命中时明确标注为预告。
+const RESOLVE_API = "https://antigravity.6106730.xyz/api/getav_meta";
+const MISSAV_REFERER = "https://missav.fans/";
+
+function normalizeCodeCandidates(code) {
+  const raw = String(code || "").trim().toLowerCase().replace(/\s+/g, "");
+  const out = [];
+  if (!raw) return out;
+  out.push(raw);
+  const fc2 = raw.match(/^fc2[-_]?(?:ppv[-_]?)?(\d{3,})$/);
+  if (fc2) { out.push(`fc2-ppv-${fc2[1]}`); out.push(`fc2-${fc2[1]}`); }
+  const hey = raw.match(/^heydouga[-_]?(\d+)[-_](\d+)$/);
+  if (hey) out.push(`heydouga-${hey[1]}-${hey[2]}`);
+  return out.filter((v, i) => out.indexOf(v) === i);
+}
+
+async function resolveFullStream(code) {
+  const candidates = normalizeCodeCandidates(code);
+  for (let i = 0; i < candidates.length; i++) {
+    for (let t = 0; t < 2; t++) {
+      try {
+        const resp = await Widget.http.get(`${RESOLVE_API}?code=${encodeURIComponent(candidates[i])}`, {
+          headers: { "User-Agent": JAVDB_HEADERS["User-Agent"], "Accept": "application/json" }
+        });
+        const d = resp && resp.data
+          ? (typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data)
+          : null;
+        if (d && d.videoUrl) return { url: d.videoUrl, code: candidates[i], title: d.title || "" };
+      } catch (e) {
+        // 换候选择码/重试
+      }
+      await new Promise(r => setTimeout(r, 400));
+    }
+  }
+  return null;
+}
 
 // JavDB 站点对未登录访客收紧：/uncensored、/tags、/actors/<id> 只回少量或登入页。
 // 因此 chip 一律改写成「公开且内容完整」的路由：
@@ -726,9 +765,33 @@ async function loadDetail(link) {
     const apiBackdrops = dvdId ? buildJavBackdrops(dvdId.dvdId) : [];
     const backdropPaths = [...siteBackdrops, ...apiBackdrops];
     const trailers = dvdId ? buildJavTrailers(dvdId.dvdId) : undefined;
+    // JavDB 站内播放的是「预告」；这里按番号去后台解析真实正片流，命中才作为播放地址
+    const resolvedFull = code ? await resolveFullStream(code) : null;
+    const previewSource = previewVideo || (trailers && trailers[0] ? trailers[0].videoUrl : "");
+    const playUrl = resolvedFull ? resolvedFull.url : previewSource;
+    const trailerList = [];
+    if (previewVideo) {
+      trailerList.push({ id: "site-preview", title: "站内预告", url: previewVideo, videoUrl: previewVideo, mediaType: "trailer", playerType: "app" });
+    }
+    (trailers || []).forEach(t => trailerList.push(t));
     const peoples = await buildPeoplesWithAvatars(actors, dvdId ? dvdId.dvdId : "");
     const genreItems = buildGenreItems(tags);
     staff.forEach(x => { if (!genreItems.find(g => g.id === x.id)) genreItems.push(x); });
+
+    if (!playUrl && code) {
+      // 正片流与站内预告都拿不到：直接转源站打开，避免把死链当播放地址
+      return {
+        id: url,
+        type: "url",
+        title: title,
+        link: `${MISSAV_REFERER}cn/${String(code).toLowerCase()}`,
+        videoUrl: "",
+        mediaType: "movie",
+        playerType: "app",
+        posterPath: poster,
+        description: `番号: ${code} · 正片流未命中，已转源站打开`
+      };
+    }
 
     return {
       id: url,
@@ -738,20 +801,22 @@ async function loadDetail(link) {
       coverUrl: poster,
       posterPath: poster,
       backdropPath: poster,
-      mediaType: "movie",
+      mediaType: resolvedFull ? "movie" : "trailer",
       link: url,
-      videoUrl: previewVideo || (trailers && trailers[0] ? trailers[0].videoUrl : ""),
+      videoUrl: playUrl,
       releaseDate: durationFormatted,
       durationText: durationFormatted,
       playerType: "app",
-      description: code ? `番号: ${code}` : title,
+      description: code
+        ? `番号: ${code}${resolvedFull ? " · 正片已解析（后台）" : (previewSource ? " · 站内预告（正片流未命中）" : "")}`
+        : title,
       actors: actors.length > 0 ? actors : undefined,
       peoples: peoples.length > 0 ? peoples : undefined,
       genreItems: genreItems.length > 0 ? genreItems : undefined,
       backdropPaths: backdropPaths.length > 0 ? backdropPaths : undefined,
-      trailers: trailers,
+      trailers: trailerList.length > 0 ? trailerList : undefined,
       customHeaders: {
-        "Referer": "https://javdb.com/",
+        "Referer": resolvedFull ? MISSAV_REFERER : "https://javdb.com/",
         "User-Agent": JAVDB_HEADERS["User-Agent"]
       },
       extra: { code: code }
@@ -761,5 +826,31 @@ async function loadDetail(link) {
   }
 }
 
+/* ---------------- 播放源模块：番号 -> 可直连正片流 ---------------- */
 
+function codeFromInput(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  const m = s.match(/([A-Za-z]{2,10}[-_]\d{2,6}(?:[-_]\d+)?)/);
+  if (m) return m[1];
+  if (/^[A-Za-z0-9_-]{3,}$/.test(s)) return s;
+  return "";
+}
 
+async function loadResource(params) {
+  const p = params || {};
+  const code = codeFromInput(p.code || p.link || p.url || "");
+  if (!code) return [];
+  const resolved = await resolveFullStream(code);
+  if (!resolved) return [];
+  return [{
+    id: resolved.code,
+    type: "url",
+    title: `正片直连（${String(resolved.code).toUpperCase()}）`,
+    videoUrl: resolved.url,
+    mediaType: "movie",
+    playerType: "app",
+    link: `${MISSAV_REFERER}cn/${resolved.code}`,
+    customHeaders: { "Referer": MISSAV_REFERER, "User-Agent": JAVDB_HEADERS["User-Agent"] }
+  }];
+}
