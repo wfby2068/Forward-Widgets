@@ -565,6 +565,22 @@ async function search(params = {}) {
   const desc = `搜索: ${keyword}`;
 
   const urls = [];
+
+  // 1. 如果搜索词包含中文/日文（非纯番号），优先尝试女优/演员专页与标签专页（这些专页完全无 Cloudflare 阻拦且影片精准）
+  const isActorOrText = !code && !/^[A-Za-z0-9\s\-]+$/.test(keyword);
+  if (isActorOrText) {
+    urls.push(
+      page === 1
+        ? `https://javday.app/search/actor/${encoded}/`
+        : `https://javday.app/search/actor/${encoded}/page/${page}/`
+    );
+    urls.push(
+      page === 1
+        ? `https://javday.app/search/tag/${encoded}/`
+        : `https://javday.app/search/tag/${encoded}/page/${page}/`
+    );
+  }
+
   if (page === 1 && code) {
     urls.push(`https://javday.app/videos/${code.compact}/`);
     urls.push(`https://javday.app/videos/${code.dashed}/`);
@@ -1019,7 +1035,7 @@ async function loadDetail(link) {
 
     // 提取女优与标签（严格过滤导航噪音）
     const actors = [];
-    $("a[href*='/actor/'], a[href*='/actress/'], .actor a, .models a").each((_, el) => {
+    $("a[href*='/search/actor/'], a[href*='/actor/'], a[href*='/actress/'], .vod_actor a, .actor a, .models a").each((_, el) => {
       const name = $(el).text().trim();
       const href = $(el).attr("href") || "";
       if (isValidActressName(name) && !isActressNavOrFilterLink(href) && !actors.find(a => a.name === name)) {
