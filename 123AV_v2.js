@@ -344,6 +344,7 @@ function extractM3u8(html) {
 }
 
 
+
 // ============================================================================
 // 🎬 Forward Universal JAV Metadata Engine (剧照/预告片/团队/标签增强引擎)
 // ============================================================================
@@ -380,6 +381,34 @@ function parseJavCode(rawText) {
     code: `${numPrefix}${prefixLower}${number5}`,
     plainCode: `${prefixLower}${number5}`
   };
+}
+
+function isValidActressName(name) {
+  if (!name || typeof name !== "string") return false;
+  const trimmed = name.trim();
+  // 长度必须大于等于 2 个字（没有任何正规女优名字只有单个字符或单字假名）
+  if (trimmed.length < 2) return false;
+  
+  // 排除单纯的单个或两个五十音平假名/片假名索引（如 "あ", "か", "さ", "aa"）
+  if (/^[ぁ-んァ-ヶa-zA-Z0-9]{1,2}$/.test(trimmed)) return false;
+  
+  // 排除常见导航分类词和系统词
+  const invalidKeywords = new Set([
+    "女优", "女優", "全部", "其他", "其它", "演员", "演員", "素人", 
+    "企划", "企劃", "动画", "動畫", "VR", "精选", "推荐", "排行", 
+    "标签", "標籤", "类别", "類別", "单体", "單體", "HD", "FHD", "4K",
+    "首页", "首頁", "最新", "热门", "熱門", "排行榜", "搜索", "登入", "注册"
+  ]);
+  if (invalidKeywords.has(trimmed)) return false;
+  
+  return true;
+}
+
+function isActressNavOrFilterLink(href) {
+  if (!href || typeof href !== "string") return false;
+  if (/\/actress(?:es)?\/[a-z]{1,2}(?:\?|\/|$)/i.test(href)) return true;
+  if (/\/actress(?:es)?\/?$/i.test(href)) return true;
+  return false;
 }
 
 function buildJavBackdrops(titleOrCode) {
@@ -425,11 +454,27 @@ function buildJavTrailers(titleOrCode) {
 }
 
 async function resolveActressAvatar(name) {
-  if (!name) return "";
+  if (!isValidActressName(name)) return "";
+  
+  // 1. 优先尝试从 JavDB 获取真实女优头像（无防盗链且覆盖度极高）
+  try {
+    const javDbUrl = `https://javdb.com/search?q=${encodeURIComponent(name)}&f=actor`;
+    const res = await Widget.http.get(javDbUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)" }
+    });
+    if (res && res.data) {
+      const match = String(res.data).match(/src="(https:\/\/c0\.jdbstatic\.com\/avatars\/[^"]+)"/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+  } catch (_) {}
+
+  // 2. 备选尝试从 MissAV 获取
   try {
     const searchUrl = `https://missav.fans/cn/actresses/${encodeURIComponent(name)}`;
     const res = await Widget.http.get(searchUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15" }
+      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)" }
     });
     if (res && res.data) {
       const $ = Widget.html.load(res.data);
@@ -439,15 +484,79 @@ async function resolveActressAvatar(name) {
       }
     }
   } catch (_) {}
+
   return "";
 }
 
-async function buildPeoplesWithAvatars(actorsList) {
-  if (!Array.isArray(actorsList) || actorsList.length === 0) return [];
-  const results = [];
-  for (const a of actorsList) {
+async function fetchFallbackActorsFromJavDb(dvdId) {
+  if (!dvdId) return [];
+  try {
+    const searchUrl = `https://javdb.com/search?q=${encodeURIComponent(dvdId)}&f=all`;
+    const res = await Widget.http.get(searchUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)" }
+    });
+    if (!res || !res.data) return [];
+    const html = String(res.data);
+    const m = html.match(/<a[^>]+href="(\/v\/[a-zA-Z0-9]+)"/);
+    if (!m) return [];
+    
+    const detailUrl = `https://javdb.com${m[1]}`;
+    const detailRes = await Widget.http.get(detailUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)" }
+    });
+    if (!detailRes || !detailRes.data) return [];
+    const $ = Widget.html.load(detailRes.data);
+    
+    const actors = [];
+    $(".movie-panel-info .panel-block").each((_, block) => {
+      const text = $(block).text();
+      if (text.includes("演員:") || text.includes("演员:")) {
+        $(block).find("a[href*='/actors/']").each((_, a) => {
+          const name = $(a).text().trim();
+          const href = $(a).attr("href") || "";
+          if (isValidActressName(name)) {
+            actors.push({
+              name,
+              link: href.startsWith("http") ? href : `https://javdb.com${href}`
+            });
+          }
+        });
+      }
+    });
+    return actors;
+  } catch (_) {
+    return [];
+  }
+}
+
+async function buildPeoplesWithAvatars(actorsList, dvdId) {
+  // 先清洗传入的演员列表，剔除单字及无效词
+  let validActors = (Array.isArray(actorsList) ? actorsList : []).filter(a => {
     const name = typeof a === "string" ? a.trim() : (a.name || a.title || "").trim();
-    if (!name) continue;
+    const link = typeof a === "object" ? (a.link || "") : "";
+    return isValidActressName(name) && !isActressNavOrFilterLink(link);
+  });
+
+  // 如果页面完全没抓到有效女优，且有番号，尝试从 JavDB 补全真实主演
+  if (validActors.length === 0 && dvdId) {
+    try {
+      const fallbackActors = await fetchFallbackActorsFromJavDb(dvdId);
+      if (fallbackActors && fallbackActors.length > 0) {
+        validActors = fallbackActors;
+      }
+    } catch (_) {}
+  }
+
+  if (validActors.length === 0) return [];
+
+  const results = [];
+  const seen = new Set();
+
+  for (const a of validActors) {
+    const name = typeof a === "string" ? a.trim() : (a.name || a.title || "").trim();
+    if (!isValidActressName(name) || seen.has(name)) continue;
+    seen.add(name);
+
     let avatar = typeof a === "object" ? (a.avatar || a.image || "") : "";
     const id = typeof a === "object" && a.link ? a.link : `actress:${encodeURIComponent(name)}`;
     
@@ -499,14 +608,32 @@ async function loadDetail(link) {
       title = $('meta[property="og:title"]').attr("content") || $("h1").first().text().trim() || "";
       cover = $('meta[property="og:image"]').attr("content") || "";
 
-      $("a[href*='/actresses/']").each((_, el) => {
-        const name = $(el).text().trim();
-        const href = $(el).attr("href") || "";
-        if (name && !actors.find(a => a.name === name)) {
-          actors.push({ name, link: href.startsWith("http") ? href : `${BASE_URL}${href}` });
+      // 1. Meta / OpenGraph 标签优先
+      $('meta[property="og:video:actor"], meta[property="video:actor"], meta[name="video:actor"]').each((_, el) => {
+        const content = $(el).attr("content") || "";
+        content.split(",").forEach(n => {
+          const t = n.trim();
+          if (isValidActressName(t) && !actors.find(a => a.name === t)) {
+            actors.push({ name: t, link: `${BASE_URL}/cn/actresses/${encodeURIComponent(t)}` });
+          }
+        });
+      });
+
+      // 2. 严格在详情信息块内匹配（带有 女优 / 女優 / actress 标签的行），绝不抓取全局导航栏
+      $("[class*='text-secondary'], .space-y-2 > div").each((_, row) => {
+        const label = $(row).find("span").first().text().replace(/\s+/g, "").replace(/：/g, ":").toLowerCase();
+        if (label.includes("女优") || label.includes("女優") || label.includes("actress")) {
+          $(row).find("a[href*='/actresses/']").each((_, a) => {
+            const name = $(a).text().trim();
+            const href = $(a).attr("href") || "";
+            if (isValidActressName(name) && !isActressNavOrFilterLink(href) && !actors.find(ac => ac.name === name)) {
+              actors.push({ name, link: href.startsWith("http") ? href : `${BASE_URL}${href}` });
+            }
+          });
         }
       });
 
+      // 提取分类与标签
       $("a[href*='/genres/'], a[href*='chinese-subtitle']").each((_, el) => {
         const name = $(el).text().trim();
         const href = $(el).attr("href") || "";
@@ -526,11 +653,11 @@ async function loadDetail(link) {
       return { id: url, type: "detail", title: title || "解析失敗", description: "未找到播放地址", link: url, playerType: "app" };
     }
 
-    // 结合 Universal JAV Metadata Engine
+    // 结合 Universal JAV Metadata Engine (带番号智能补全)
     const dvdId = parseJavCode(title || url);
     const backdropPaths = dvdId ? buildJavBackdrops(dvdId.dvdId) : [];
     const trailers = dvdId ? buildJavTrailers(dvdId.dvdId) : undefined;
-    const peoples = await buildPeoplesWithAvatars(actors);
+    const peoples = await buildPeoplesWithAvatars(actors, dvdId ? dvdId.dvdId : "");
     const genreItems = buildGenreItems(tags);
 
     return {
