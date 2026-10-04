@@ -547,6 +547,22 @@ async function search(params = {}) {
   const desc = `搜索: ${keyword}`;
 
   const urls = [];
+
+  // 1. 如果搜索词包含中文/日文（女优名/演员名/标签），优先走女优/演员与标签专页（绕过 CF 验证并精准匹配）
+  const isActorOrText = !code && !/^[A-Za-z0-9\s\-]+$/.test(keyword);
+  if (isActorOrText) {
+    urls.push(
+      page === 1
+        ? `https://javday.app/search/actor/${encoded}/`
+        : `https://javday.app/search/actor/${encoded}/page/${page}/`
+    );
+    urls.push(
+      page === 1
+        ? `https://javday.app/search/tag/${encoded}/`
+        : `https://javday.app/search/tag/${encoded}/page/${page}/`
+    );
+  }
+
   if (page === 1 && code) {
     urls.push(`https://javday.app/videos/${code.compact}/`);
     urls.push(`https://javday.app/videos/${code.dashed}/`);
