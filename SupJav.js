@@ -4,7 +4,7 @@ var WidgetMetadata = {
     description: "SupJav 全功能版：最新、热门、无码、FC2、VR、片商与女优全收录；详情带演员/片商/标签与完整数据",
     author: "婉儿",
     site: "https://supjav.com",
-    version: "2.1.0",
+    version: "2.1.1",
     requiredVersion: "0.0.1",
     detailCacheDuration: 0,
     modules: [
@@ -511,7 +511,11 @@ async function loadDetail(link) {
     if (meta) {
         (meta.actresses || []).forEach(function (a) {
             var nm = castName(a);
-            if (nm) peoples.push({ id: chipCastPath(nm, nm), title: nm });
+            if (!nm) return;
+            var av = avatarOf(a);
+            var chip = { id: chipCastPath(nm, nm), title: nm, role: "主演" };
+            if (av) { chip.avatar = av; chip.image = av; }
+            peoples.push(chip);
         });
         (meta.genres || []).forEach(function (g) {
             var nm = nmOf(g);
@@ -548,6 +552,14 @@ async function loadDetail(link) {
         extra.makers.forEach(function (n) { genreItems.push({ id: chipMakerPath(n, n), title: n }); });
     }
 
+    // 头像兜底：meta 没给头像时，手机侧用 JavDB 女优页补（最多 3 个；失败就保持纯文字 chip）
+    for (var ai = 0; ai < peoples.length && ai < 3; ai++) {
+        if (!peoples[ai].avatar) {
+            var av3 = await resolveActressAvatar(peoples[ai].title);
+            if (av3) { peoples[ai].avatar = av3; peoples[ai].image = av3; }
+        }
+    }
+
     return {
         id: url || link,
         type: "detail",
@@ -570,6 +582,24 @@ async function loadDetail(link) {
         peoples: peoples.length ? peoples : undefined,
         genreItems: genreItems.length ? genreItems : undefined
     };
+}
+
+function avatarOf(a) {
+    if (a && typeof a === "object") return String(a.avatar || a.image || "").trim();
+    return "";
+}
+
+// 手机侧兜底：JavDB 女优页头像（无防盗链，覆盖率高）。失败返回空，不编造。
+async function resolveActressAvatar(name) {
+    if (!name) return "";
+    try {
+        var r = await Widget.http.get("https://javdb.com/search?q=" + encodeURIComponent(name) + "&f=actor",
+            { headers: SUPJAV_HEADERS, allow_redirects: true });
+        var h = r && r.data ? String(r.data) : "";
+        var m = h.match(/src="(https:\/\/c0\.jdbstatic\.com\/avatars\/[^"]+)"/);
+        if (m) return m[1];
+    } catch (e) {}
+    return "";
 }
 
 function nmOf(x) {
