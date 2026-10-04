@@ -1043,12 +1043,17 @@ async function buildPeoplesWithAvatars(actorsList, dvdId) {
       } catch (_) {}
     }
 
-    results.push({
+    const personItem = {
       id: id,
       title: name,
-      avatar: avatar || "",
       role: "主演"
-    });
+    };
+    if (avatar) {
+      personItem.avatar = avatar;
+      personItem.image = avatar;
+      personItem.imgSrc = avatar;
+    }
+    results.push(personItem);
   }
   return results;
 }
