@@ -4,7 +4,7 @@ var WidgetMetadata = {
     description: "SupJav 全功能版：最新、热门、无码、FC2、VR、片商与女优全收录；详情带演员/片商/标签与完整数据",
     author: "婉儿",
     site: "https://supjav.com",
-    version: "2.1.1",
+    version: "2.1.2",
     requiredVersion: "0.0.1",
     detailCacheDuration: 0,
     modules: [
@@ -514,7 +514,7 @@ async function loadDetail(link) {
             if (!nm) return;
             var av = avatarOf(a);
             var chip = { id: chipCastPath(nm, nm), title: nm, role: "主演" };
-            if (av) { chip.avatar = av; chip.image = av; }
+            if (av) { chip.avatar = av; chip.image = av; chip.imgSrc = av; }
             peoples.push(chip);
         });
         (meta.genres || []).forEach(function (g) {
@@ -556,7 +556,7 @@ async function loadDetail(link) {
     for (var ai = 0; ai < peoples.length && ai < 3; ai++) {
         if (!peoples[ai].avatar) {
             var av3 = await resolveActressAvatar(peoples[ai].title);
-            if (av3) { peoples[ai].avatar = av3; peoples[ai].image = av3; }
+            if (av3) { peoples[ai].avatar = av3; peoples[ai].image = av3; peoples[ai].imgSrc = av3; }
         }
     }
 
