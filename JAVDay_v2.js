@@ -513,10 +513,80 @@ function normalizeVideoCode(keyword) {
   };
 }
 
+function decodeIdValue(value) {
+  if (!value) return "";
+  const raw = String(value);
+  const cut = raw.indexOf(":");
+  const body = cut >= 0 ? raw.slice(cut + 1) : raw;
+  try { return decodeURIComponent(body); } catch (_) { return body; }
+}
+
+function buildActorListUrl(name, page) {
+  const enc = encodeURIComponent(String(name || "").trim());
+  return page > 1
+    ? `https://javday.app/search/actor/${enc}/page/${page}/`
+    : `https://javday.app/search/actor/${enc}/`;
+}
+
+function buildTagListUrl(name, page) {
+  const enc = encodeURIComponent(String(name || "").trim());
+  return page > 1
+    ? `https://javday.app/search/tag/${enc}/page/${page}/`
+    : `https://javday.app/search/tag/${enc}/`;
+}
+
+// 详情页点击女优 / 标签时，Forward 会把 id 通过 params.peopleId / params.genreId 回传给列表模块。
+// 这里按 id 精确拉取作品列表，绝不回退到模块默认列表（否则会串出首页最新片）。
+async function loadIdList(idValue, kind, page) {
+  const value = String(idValue || "").trim();
+  if (!value) return null;
+
+  const candidates = [];
+  if (/^https?:\/\//i.test(value)) {
+    if (!/javday\.app/i.test(value)) return null;
+    candidates.push(page > 1 ? `${value.replace(/\/+$/, "")}/page/${page}/` : value);
+  } else {
+    const name = decodeIdValue(value);
+    if (name) {
+      candidates.push(kind === "actor" ? buildActorListUrl(name, page) : buildTagListUrl(name, page));
+      if (kind === "actor") candidates.push(buildTagListUrl(name, page));
+    }
+  }
+
+  const desc = kind === "actor" ? "来自JAVDay | 女优作品" : "来自JAVDay | 标签作品";
+  for (const url of candidates) {
+    try {
+      const html = await fetchHtml(url);
+      if (!html || isMaintenanceHtml(html)) continue;
+      if (isBlockedHtml(html)) continue;
+      const items = parseVideoBoxes(html, desc);
+      if (items.length > 0) return items;
+    } catch (_) {}
+  }
+  return null;
+}
+
 async function loadPage(params = {}) {
+  const page = parseInt(params.page, 10) || 1;
+
+  // 女优 / 演员 chip
+  const peopleId = params.peopleId || params.people_id || params.actorId || params.actor_id || params.actor;
+  if (peopleId) {
+    const items = await loadIdList(peopleId, "actor", page);
+    if (items && items.length) return items;
+    return [buildListItem(0, "https://javday.app/", "JAVDay 暂未收录该女优的作品", "", `未找到 ${decodeIdValue(peopleId) || peopleId} 的片单`)];
+  }
+
+  // 标签 / 分类 chip
+  const genreId = params.genreId || params.genre_id || params.tagId || params.tag;
+  if (genreId) {
+    const items = await loadIdList(genreId, "tag", page);
+    if (items && items.length) return items;
+    return [buildListItem(0, "https://javday.app/", "JAVDay 暂未收录该标签的作品", "", `未找到 ${decodeIdValue(genreId) || genreId} 的片单`)];
+  }
+
   const baseUrl = params.url;
   const sortBy = params.sort_by || "new";
-  const page = parseInt(params.page, 10) || 1;
   const pagePath = buildPageUrl(baseUrl, sortBy, page);
   const targetUrl = getFullUrl(pagePath);
   const isSeries = (baseUrl && baseUrl.includes("label/hot")) || (pagePath && pagePath.includes("label/hot"));
@@ -959,7 +1029,12 @@ async function buildPeoplesWithAvatars(actorsList, dvdId) {
     seen.add(name);
 
     let avatar = typeof a === "object" ? (a.avatar || a.image || "") : "";
-    const id = typeof a === "object" && a.link ? a.link : `actress:${encodeURIComponent(name)}`;
+    // id 必须是 JAVDay 自己的链接或可解析的女优标记，绝不要把 JavDB 等外链当 id 回传
+    const rawLink = typeof a === "object" ? (a.link || "") : "";
+    let id = `actress:${encodeURIComponent(name)}`;
+    if (/javday\.app/i.test(rawLink) && /\/search\/(actor|tag)\//i.test(rawLink)) {
+      id = rawLink.startsWith("http") ? rawLink : toAbsoluteUrl(rawLink);
+    }
     
     // 如果没有自带头像，尝试异步解析头像
     if (!avatar) {
@@ -986,7 +1061,10 @@ function buildGenreItems(tagsList) {
     const title = typeof t === "string" ? t.trim() : (t.title || t.name || "").trim();
     if (!title || seen.has(title)) continue;
     seen.add(title);
-    const id = typeof t === "object" && t.link ? t.link : `genre:${encodeURIComponent(title)}`;
+    const rawLink = typeof t === "object" ? (t.link || "") : "";
+    const id = /\/tag\//i.test(rawLink)
+      ? (rawLink.startsWith("http") ? rawLink : toAbsoluteUrl(rawLink))
+      : `tag:${encodeURIComponent(title)}`;
     items.push({ id, title });
   }
   return items;
@@ -1143,6 +1221,10 @@ async function loadDetail(link) {
 
 async function searchGlobal(params = {}) {
   const { keyword, page } = params;
+  const peopleId = params.peopleId || params.people_id || params.actorId || params.actor_id;
+  if (peopleId) return await loadPage({ peopleId, page });
+  const genreId = params.genreId || params.genre_id || params.tagId;
+  if (genreId) return await loadPage({ genreId, page });
   if (!String(keyword || "").trim()) {
     return await loadPage({ url: "https://javday.app/label/new/", sort_by: "new", page: 1 });
   }
