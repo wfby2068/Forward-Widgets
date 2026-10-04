@@ -1,10 +1,10 @@
 var WidgetMetadata = {
   id: "jable_v2",
   title: "Jable",
-  description: "Jable 视频聚合模块 v2；多站故障切换 + loadResource 播放源",
+  description: "Jable 视频聚合模块 v2；多站故障切换 + loadResource 播放源；详情页女优 / 标签 chip 直达片单",
   author: "nibiru | 婉儿升级",
   site: "https://jable.tv",
-  version: "2.0.0",
+  version: "2.0.1",
   requiredVersion: "0.0.2",
   detailCacheDuration: 3600,
   modules: [
@@ -1274,7 +1274,128 @@ function parseVideoList(htmlContent) {
 
 // ==================== 模块函数 ====================
 
+// ==================== 详情页 chip（女优 / 标签）id 解析 ====================
+// Forward 在详情页点击女优 / 标签 chip 时，会把 chip 的 id 通过 params.peopleId / params.genreId 回传给列表模块。
+// 这里必须按 id 精确拉片单，且优先于模块自带的 url 常量参数；绝不回退模块默认列表（否则会串出首页最新片）。
+const JABLE_LIST_BLOCK = "mode=async&function=get_block&block_id=list_videos_common_videos_list";
+
+function decodeIdValue(value) {
+  if (!value) return "";
+  const raw = String(value);
+  const cut = raw.indexOf(":");
+  const body = cut >= 0 ? raw.slice(cut + 1) : raw;
+  try { return decodeURIComponent(body); } catch (_) { return body; }
+}
+
+function normalizeJablePath(path) {
+  let p = String(path || "").trim();
+  if (!p) return "";
+  if (/^https?:\/\//i.test(p)) {
+    if (!/jable\.tv/i.test(p)) return "";
+    p = p.replace(/^https?:\/\/[^/]+/i, "");
+  }
+  p = p.replace(/[?#].*$/, "");
+  if (!p.startsWith("/")) p = `/${p}`;
+  if (!p.endsWith("/")) p += "/";
+  return p;
+}
+
+function buildJableSearchUrl(name, offset) {
+  const enc = encodeURIComponent(String(name || "").trim());
+  const url = `${BASE_URL}/search/${enc}/?mode=async&function=get_block&block_id=list_videos_videos_list_search_result&q=${enc}`;
+  return offset ? `${url}&from=${offset}` : url;
+}
+
+// 返回按优先级排列的候选地址：先用 chip 自带的真实路径，再退站内搜索
+function buildIdListCandidates(idValue, kind, params = {}) {
+  const raw = String(idValue || "").trim();
+  const out = [];
+  const push = (u) => { const v = String(u || "").trim(); if (v && !out.includes(v)) out.push(v); };
+  if (!raw) return out;
+
+  const page = Number(params.page || 0) || 0;
+  const from = Number(params.from || 0) || 0;
+  // Forward 的 from 字段是页码；偏移量按每页 24 条换算
+  const offset = from > 1 ? (from - 1) * 24 : 0;
+  const pageNum = page > 1 ? page : 0;
+
+  const addPath = (path) => {
+    const clean = normalizeJablePath(path);
+    if (!clean) return;
+    const plain = `${BASE_URL}${clean}`;
+    const block = `${plain}?${JABLE_LIST_BLOCK}`;
+    // 实测：女优 / 标签页的面包路径直连稳定（200/24 卡片），async block 形式对女优页会 403；
+    // 因此直连优先，block 形式兜底；翻页用路径式 /N/（实测 200）优先，from= 偏移兜底
+    if (pageNum) {
+      push(`${plain}${pageNum}/`);
+      push(`${block}&from=${(pageNum - 1) * 24}`);
+    } else if (offset) {
+      push(`${plain}${Math.floor(offset / 24) + 1}/`);
+      push(`${block}&from=${offset}`);
+    } else {
+      push(plain);
+      push(block);
+    }
+  };
+
+  const addSearch = (name) => {
+    if (!name) return;
+    const enc = encodeURIComponent(String(name).trim());
+    if (pageNum) {
+      push(`${buildJableSearchUrl(name, "")}&from=${(pageNum - 1) * 24}`);
+    } else if (offset) {
+      push(buildJableSearchUrl(name, offset));
+    } else {
+      push(buildJableSearchUrl(name, ""));
+      push(`${BASE_URL}/search/${enc}/`);
+    }
+  };
+
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("/")) {
+    addPath(raw);
+  } else {
+    const name = decodeIdValue(raw);
+    if (kind === "actor") {
+      addPath(`${BASE_URL}/models/${encodeURIComponent(name)}/`);
+    } else {
+      addPath(`${BASE_URL}/tags/${encodeURIComponent(name)}/`);
+    }
+    addSearch(name);
+  }
+  return out;
+}
+
+async function loadIdList(idValue, kind, params = {}) {
+  const candidates = buildIdListCandidates(idValue, kind, params);
+  if (candidates.length === 0) {
+    return [buildStatusItem("err", "地址无法识别", "该女优 / 标签链接不可用")];
+  }
+
+  let blocked = false;
+  for (const candidate of candidates) {
+    const fetched = await fetchWithRetry(candidate);
+    if (fetched.blocked) { blocked = true; continue; }
+    if (fetched.error || !fetched.html) continue;
+    const items = parseVideoList(fetched.html);
+    if (items.length > 0) return items;
+  }
+
+  if (blocked) {
+    return [buildStatusItem("err_cf", "被 Cloudflare 拦截", "片单未通过验证，请稍后重试")];
+  }
+  const name = decodeIdValue(idValue) || idValue;
+  return kind === "actor"
+    ? [buildStatusItem("empty", `暂未收录「${name}」`, "Jable 没有这位女优的作品")]
+    : [buildStatusItem("empty", `暂无「${name}」的影片`, "Jable 没有这个标签的影片")];
+}
+
 async function search(params = {}) {
+  const peopleId = params.peopleId || params.people_id || params.actorId || params.actor_id || params.actor;
+  const genreId = params.genreId || params.genre_id || params.tagId || params.tag;
+  if (peopleId || genreId) {
+    return await loadIdList(peopleId || genreId, peopleId ? "actor" : "tag", params);
+  }
+
   const keyword = encodeURIComponent(params.keyword || "");
   let url = `${BASE_URL}/search/${keyword}/?mode=async&function=get_block&block_id=list_videos_videos_list_search_result&q=${keyword}`;
   if (params.sort_by) url += `&sort_by=${params.sort_by}`;
@@ -1283,6 +1404,12 @@ async function search(params = {}) {
 }
 
 async function searchGlobal(params = {}) {
+  const peopleId = params.peopleId || params.people_id || params.actorId || params.actor_id || params.actor;
+  const genreId = params.genreId || params.genre_id || params.tagId || params.tag;
+  if (peopleId || genreId) {
+    return await loadIdList(peopleId || genreId, peopleId ? "actor" : "tag", params);
+  }
+
   const { keyword, from: page } = params;
   if (!String(keyword || "").trim()) {
     return await loadPage({
@@ -1295,6 +1422,13 @@ async function searchGlobal(params = {}) {
 
 async function loadPage(params = {}) {
   try {
+    // 详情页 chip 点击优先：peopleId / genreId 必须压过模块自带的 url 常量
+    const peopleId = params.peopleId || params.people_id || params.actorId || params.actor_id || params.actor;
+    const genreId = params.genreId || params.genre_id || params.tagId || params.tag;
+    if (peopleId || genreId) {
+      return await loadIdList(peopleId || genreId, peopleId ? "actor" : "tag", params);
+    }
+
     let url = params.url;
     if (!url) return [buildStatusItem("err", "错误", "地址不能为空")];
 
@@ -1536,7 +1670,10 @@ async function buildPeoplesWithAvatars(actorsList, dvdId) {
     seen.add(name);
 
     let avatar = typeof a === "object" ? (a.avatar || a.image || "") : "";
-    const id = typeof a === "object" && a.link ? a.link : `actress:${encodeURIComponent(name)}`;
+    // chip id 必须是 Jable 自己的地址；JavDB 兜底来的外链统一改写成 actress:名字，交给列表模块解析
+    const rawLink = typeof a === "object" ? (a.link || "") : "";
+    const linkIsJable = /^https?:\/\//i.test(rawLink) ? /jable\.tv/i.test(rawLink) : /^\/models\//i.test(rawLink);
+    const id = linkIsJable && rawLink ? rawLink : `actress:${encodeURIComponent(name)}`;
     
     // 如果没有自带头像，尝试异步解析头像
     if (!avatar) {
@@ -1563,7 +1700,9 @@ function buildGenreItems(tagsList) {
     const title = typeof t === "string" ? t.trim() : (t.title || t.name || "").trim();
     if (!title || seen.has(title)) continue;
     seen.add(title);
-    const id = typeof t === "object" && t.link ? t.link : `genre:${encodeURIComponent(title)}`;
+    const rawLink = typeof t === "object" ? (t.link || "") : "";
+    const linkIsJable = /^https?:\/\//i.test(rawLink) ? /jable\.tv/i.test(rawLink) : /^\/(tags|categories)\//i.test(rawLink);
+    const id = linkIsJable && rawLink ? rawLink : `genre:${encodeURIComponent(title)}`;
     items.push({ id, title });
   }
   return items;
@@ -1601,9 +1740,12 @@ async function loadDetail(link) {
     // 提取女优（含头像与链接）
     const actors = [];
     $(".models a, .info-header a[href*='/models/']").each((_, el) => {
-      const name = $(el).text().trim();
-      const href = $(el).attr("href") || "";
-      const avatar = $(el).find("img").attr("data-src") || $(el).find("img").attr("src") || "";
+      const $el = $(el);
+      // jable 详情页的女优名只在锚点里显示首字占位符，完整名字放在 title 属性上
+      const attrTitle = ($el.attr("title") || $el.find("[title]").first().attr("title") || "").trim();
+      const name = attrTitle || $el.text().trim();
+      const href = $el.attr("href") || "";
+      const avatar = $el.find("img").attr("data-src") || $el.find("img").attr("src") || "";
       if (isValidActressName(name) && !isActressNavOrFilterLink(href) && !actors.find(a => a.name === name)) {
         actors.push({ name, link: href, avatar });
       }
