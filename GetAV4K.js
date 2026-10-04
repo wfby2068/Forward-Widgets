@@ -53,7 +53,7 @@ var WidgetMetadata = {
   description: "GetAV 官方片库 + MissAV 真实分类/题材/片商/女优榜；详情页女优与题材直达片单；服务端解析直连播放",
   author: "婉儿",
   site: "https://getav.net",
-  version: "3.0.0",
+  version: "3.1.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 1800,
   modules: [
@@ -253,13 +253,45 @@ function toItem(it) {
     title: it.title || code.toUpperCase(),
     backdropPath: cover,
     posterPath: cover,
-    previewUrl: it.preview || "",
     mediaType: "movie",
     durationText: it.duration || "",
     link: MISSAV + "/cn/" + code,
     playerType: "system",
     description: code.toUpperCase()
   };
+}
+
+const STREAMS_API = API + "/getav_streams";
+
+/* 列表项必须直接可播「正片」：后台批量把番号解析成 m3u8。
+   绝不把 preview.mp4（1~2 分钟）当播放地址，那正是「时长不对 / 像预览」的根源。 */
+async function attachStreams(items) {
+  const codes = items.map(function (x) { return x.id; }).filter(Boolean);
+  if (!codes.length) return items;
+  let streams = {};
+  try {
+    const resp = await Widget.http.get(STREAMS_API + "?codes=" + encodeURIComponent(codes.join(",")), {
+      headers: { "User-Agent": UA, "Accept": "application/json" }
+    });
+    if (resp && resp.data) {
+      const d = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+      streams = (d && d.streams) || {};
+    }
+  } catch (e) {
+    streams = {};
+  }
+  items.forEach(function (x) {
+    const u = streams[x.id];
+    if (u) {
+      x.videoUrl = u;
+      x.mediaType = "movie";
+      x.playerType = "app";
+      x.customHeaders = { "Referer": MISSAV + "/", "User-Agent": UA };
+    } else {
+      x.type = "detail";
+    }
+  });
+  return items;
 }
 
 function toItems(list) {
@@ -368,7 +400,7 @@ async function fetchList(path, page, from) {
   if (!data) {
     return [buildStatusItem("err_cf", "片单暂时取不到", "后台解析未返回内容，请稍后重试")];
   }
-  const items = toItems(data.items);
+  const items = await attachStreams(toItems(data.items));
   if (!items.length) {
     const label = decodeURIComponent(clean.split("/").filter(Boolean).pop() || "");
     return [buildStatusItem("empty", "暂无「" + label + "」的影片", "源站该分类第 " + page + " 页没有内容")];
@@ -401,7 +433,7 @@ async function searchVideos(params) {
   if (!data) {
     return [buildStatusItem("err_cf", "搜索暂时不可用", "后台搜索未返回内容，请稍后重试")];
   }
-  const items = toItems(data.items);
+  const items = await attachStreams(toItems(data.items));
   if (!items.length) {
     return [buildStatusItem("empty", "没有找到「" + kw + "」", "换个番号或女优名试试")];
   }
