@@ -1321,6 +1321,147 @@ async function loadPage(params = {}) {
 
 // ==================== 详情页 ====================
 
+
+// ============================================================================
+// 🎬 Forward Universal JAV Metadata Engine (剧照/预告片/团队/标签增强引擎)
+// ============================================================================
+
+const JAV_MGSTAGE_PREFIXES = new Set(["ABF", "ABW", "JUFE", "MAAN", "PPT", "SIRO", "LUXU", "GANA", "ABP", "CHN", "SQTE", "FSDSS"]);
+
+function parseJavCode(rawText) {
+  if (!rawText) return null;
+  const raw = String(rawText).toUpperCase();
+  const match = raw.match(/\b([A-Z0-9]{2,10})-?(\d{2,5})\b/);
+  if (!match) return null;
+  const prefix = match[1];
+  const prefixLower = prefix.toLowerCase();
+  const number = match[2];
+  const number3 = number.padStart(3, "0");
+  const number5 = number.padStart(5, "0");
+
+  const numericMap = {
+    WSA: "2",
+    FSDSS: "1", FCDSS: "1", FNS: "1", FTHTD: "1", FALENO: "1", FGAN: "1", FSNF: "1", FLAV: "1",
+    ABP: "118", CHN: "118",
+    STARS: "1", STAR: "1", START: "1", SODS: "1",
+    REBD: "h_346", REBDB: "h_346", GSHRB: "h_346"
+  };
+  const numPrefix = numericMap[prefix] || "";
+
+  return {
+    dvdId: `${prefix}-${number}`,
+    prefix,
+    prefixLower,
+    number,
+    number3,
+    number5,
+    code: `${numPrefix}${prefixLower}${number5}`,
+    plainCode: `${prefixLower}${number5}`
+  };
+}
+
+function buildJavBackdrops(titleOrCode) {
+  const parts = parseJavCode(titleOrCode);
+  if (!parts) return [];
+  const urls = [];
+
+  if (JAV_MGSTAGE_PREFIXES.has(parts.prefix)) {
+    for (let i = 1; i <= 8; i++) {
+      urls.push(`https://image.mgstage.com/images/prestige/${parts.prefixLower}/${parts.number3}/cap_e_${i}_${parts.prefixLower}-${parts.number3}.jpg`);
+    }
+    return urls;
+  }
+
+  for (let i = 1; i <= 10; i++) {
+    urls.push(`https://pics.dmm.co.jp/digital/video/${parts.code}/${parts.code}jp-${i}.jpg`);
+  }
+  return urls;
+}
+
+function buildJavTrailers(titleOrCode) {
+  const parts = parseJavCode(titleOrCode);
+  if (!parts) return [];
+  const first = parts.code[0];
+  const folder = parts.code.slice(0, 3);
+  const videoUrl = `https://media.javtrailers.com/hlsvideo/freepv/${first}/${folder}/${parts.code}/playlist.m3u8`;
+
+  let coverUrl = `https://pics.dmm.co.jp/digital/video/${parts.code}/${parts.code}pl.jpg`;
+  if (JAV_MGSTAGE_PREFIXES.has(parts.prefix)) {
+    coverUrl = `https://image.mgstage.com/images/prestige/${parts.prefixLower}/${parts.number3}/pb_e_${parts.prefixLower}-${parts.number3}.jpg`;
+  }
+
+  return [{
+    id: `trailer-${parts.dvdId}`,
+    title: `预告片 (${parts.dvdId})`,
+    url: videoUrl,
+    videoUrl: videoUrl,
+    coverUrl: coverUrl,
+    posterPath: coverUrl,
+    mediaType: "movie",
+    playerType: "app"
+  }];
+}
+
+async function resolveActressAvatar(name) {
+  if (!name) return "";
+  try {
+    const searchUrl = `https://missav.fans/cn/actresses/${encodeURIComponent(name)}`;
+    const res = await Widget.http.get(searchUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15" }
+    });
+    if (res && res.data) {
+      const $ = Widget.html.load(res.data);
+      const img = $('meta[property="og:image"]').attr("content") || $(".avatar img, .rounded-full img").first().attr("src");
+      if (img && !img.includes("logo") && !img.includes("square")) {
+        return img.startsWith("//") ? `https:${img}` : img;
+      }
+    }
+  } catch (_) {}
+  return "";
+}
+
+async function buildPeoplesWithAvatars(actorsList) {
+  if (!Array.isArray(actorsList) || actorsList.length === 0) return [];
+  const results = [];
+  for (const a of actorsList) {
+    const name = typeof a === "string" ? a.trim() : (a.name || a.title || "").trim();
+    if (!name) continue;
+    let avatar = typeof a === "object" ? (a.avatar || a.image || "") : "";
+    const id = typeof a === "object" && a.link ? a.link : `actress:${encodeURIComponent(name)}`;
+    
+    // 如果没有自带头像，尝试异步解析头像
+    if (!avatar) {
+      try {
+        avatar = await resolveActressAvatar(name);
+      } catch (_) {}
+    }
+
+    results.push({
+      id: id,
+      title: name,
+      avatar: avatar || "",
+      role: "主演"
+    });
+  }
+  return results;
+}
+
+function buildGenreItems(tagsList) {
+  if (!Array.isArray(tagsList) || tagsList.length === 0) return [];
+  const seen = new Set();
+  const items = [];
+  for (const t of tagsList) {
+    const title = typeof t === "string" ? t.trim() : (t.title || t.name || "").trim();
+    if (!title || seen.has(title)) continue;
+    seen.add(title);
+    const id = typeof t === "object" && t.link ? t.link : `genre:${encodeURIComponent(title)}`;
+    items.push({ id, title });
+  }
+  return items;
+}
+
+
+
 async function loadDetail(link) {
   try {
     const fetched = await fetchWithRetry(link);
@@ -1348,18 +1489,36 @@ async function loadDetail(link) {
     const duration = $(".absolute-bottom-right .label, .duration, [class*='duration']").first().text().trim();
     const description = $('meta[property="og:description"]').attr("content") || "";
 
-    // 提取女优
+    // 提取女优（含头像与链接）
     const actors = [];
     $(".models a, .info-header a[href*='/models/']").each((_, el) => {
       const name = $(el).text().trim();
       const href = $(el).attr("href") || "";
+      const avatar = $(el).find("img").attr("data-src") || $(el).find("img").attr("src") || "";
       if (name && !actors.find(a => a.name === name)) {
-        actors.push({ name, link: href });
+        actors.push({ name, link: href, avatar });
+      }
+    });
+
+    // 提取标签 (分类胶囊)
+    const tags = [];
+    $(".tags a, a[href*='/tags/']").each((_, el) => {
+      const name = $(el).text().trim();
+      const href = $(el).attr("href") || "";
+      if (name && !tags.find(t => t.title === name)) {
+        tags.push({ title: name, link: href });
       }
     });
 
     // 提取推荐视频
     const relatedItems = parseVideoList(html);
+
+    // 番号与高级元数据引擎 (剧照 / 预告片 / 团队 / 分类)
+    const dvdId = parseJavCode(title || link);
+    const backdropPaths = dvdId ? buildJavBackdrops(dvdId.dvdId) : [];
+    const trailers = dvdId ? buildJavTrailers(dvdId.dvdId) : undefined;
+    const peoples = await buildPeoplesWithAvatars(actors);
+    const genreItems = buildGenreItems(tags);
 
     const item = {
       id: link,
@@ -1375,6 +1534,10 @@ async function loadDetail(link) {
       backdropPath: cover,
       image: cover,
       actors: actors.length > 0 ? actors : undefined,
+      peoples: peoples.length > 0 ? peoples : undefined,
+      genreItems: genreItems.length > 0 ? genreItems : undefined,
+      backdropPaths: backdropPaths.length > 0 ? backdropPaths : undefined,
+      trailers: trailers,
       relatedItems: relatedItems.length > 0 ? relatedItems : undefined,
       customHeaders: {
         "Referer": link,
@@ -1388,6 +1551,7 @@ async function loadDetail(link) {
     return [buildStatusItem("err", "详情页错误", e.message)];
   }
 }
+
 
 // ==================== loadResource 播放源 ====================
 
