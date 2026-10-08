@@ -1,0 +1,8 @@
+#!name=鲨鱼记账 VIP
+#!desc=解锁鲨鱼记账永久VIP会员及全部高级功能（含账本搜索、导出、无广告）
+
+[MITM]
+hostname = %APPEND% api.shayujizhang.com
+
+[Script]
+鲨鱼记账 = type=http-response,pattern=^https?:\/\/api\.shayujizhang\.com\/account\/(grant\/detail\/info|detail\/info|grant\/vip\/detail),requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/wfby2068/Forward-Widgets/main/syjz.js
