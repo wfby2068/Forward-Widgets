@@ -1,0 +1,9 @@
+#!name=无忧行号码托管免插卡激活
+#!desc=拦截 getCallStatus 自动注入 authentication_code = 1，解决美版无物理卡槽 iPhone 无法开启托管与接听的问题。
+#!category=婉儿定制
+
+[MITM]
+hostname = %APPEND% app.jegotrip.com.cn
+
+[Script]
+JegoVerify = type=http-response,pattern=^https?:\/\/app\.jegotrip\.com\.cn\/api\/service\/voip\/v1\/getCallStatus,requires-body=1,max-size=0,script-path=https://antigravity.6106730.xyz/jegotrip_verify.js
