@@ -1,0 +1,9 @@
+#!name=Playbox 自动打卡凭证捕获
+#!desc=在手机打开 Playbox 时自动无感捕获 Bearer Token 与 Cookie 并同步到 VPS，开启后台全自动每日签到！
+#!category=婉儿自动化
+
+[Script]
+Playbox_Sync = type=http-request,pattern=^https:\/\/api\.playbox\.com\/(api|auth)\/,script-path=https://raw.githubusercontent.com/wfby2068/Forward-Widgets/main/scripts/playbox_mitm.js,requires-body=false
+
+[MITM]
+hostname = %APPEND% api.playbox.com
