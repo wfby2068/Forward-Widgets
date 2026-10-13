@@ -1,0 +1,9 @@
+#!name=Playbox 凭证自动续期
+#!desc=打开 Playbox 时无感捕获登录态并回传 VPS，后台自动续期，60 天不用管
+#!category=婉儿自动化
+
+[Script]
+Playbox_Sync = type=http-request,pattern=^https:\/\/api\.playbox\.com\/(api|auth)\/,script-path=https://raw.githubusercontent.com/wfby2068/Forward-Widgets/main/scripts/playbox_mitm.js,requires-body=false
+
+[MITM]
+hostname = %APPEND% api.playbox.com
