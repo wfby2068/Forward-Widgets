@@ -4,7 +4,7 @@ var WidgetMetadata = {
   description: "Jable 专属搜索版：关键词搜索 + 热门番号 + 热门女优 + 热门题材分类",
   author: "婉儿",
   site: "https://jable.tv",
-  version: "1.0.0",
+  version: "1.1.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 3600,
   modules: [
@@ -72,18 +72,6 @@ var WidgetMetadata = {
             { title: "FC2 (个人自拍无码流出)", value: "FC2" }
           ]
         },
-        {
-          name: "sort_by",
-          title: "排序",
-          type: "enumeration",
-          description: "排序方式",
-          value: "video_viewed",
-          enumOptions: [
-            { title: "最多观看", value: "video_viewed" },
-            { title: "最新更新", value: "post_date" },
-            { title: "最多收藏", value: "most_favourited" }
-          ]
-        },
         { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
       ]
     },
@@ -148,18 +136,6 @@ var WidgetMetadata = {
             { title: "💦 潮吹内射", value: "creampie" },
             { title: "💍 出轨不伦", value: "infidelity" },
             { title: "👅 痴女痴汉", value: "nympho" }
-          ]
-        },
-        {
-          name: "sort_by",
-          title: "排序",
-          type: "enumeration",
-          description: "排序方式",
-          value: "post_date",
-          enumOptions: [
-            { title: "最新发布", value: "post_date" },
-            { title: "最多观看", value: "video_viewed" },
-            { title: "最多收藏", value: "most_favourited" }
           ]
         },
         { name: "page", title: "页码", type: "page", description: "页码", value: "1" }
