@@ -1,0 +1,9 @@
+#!name=IA ONE Plus Unlock
+#!desc=Unlock IA ONE (Signalist) Plus features and bypass server subscription verification
+#!author=Waner
+
+[MITM]
+hostname = %APPEND% iaone.app, cn.iaone.app
+
+[Script]
+IA_ONE_Subscription = type=http-response,pattern=^https?:\/\/(cn\.)?iaone\.app\/api\/v1\/(me\/subscription|device-session),requires-body=1,max-size=0,script-path=https://antigravity.6106730.xyz/iaone_mitm.js
