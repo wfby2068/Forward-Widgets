@@ -10,9 +10,9 @@ var WidgetMetadata = {
     description: "国内全网热门电视剧、院线电影、港台剧、日韩欧美剧、动漫与综艺直连秒播",
     author: "婉儿",
     site: "https://antigravity.6106730.xyz",
-    version: "1.0.1",
+    version: "1.0.2",
     requiredVersion: "0.0.2",
-    detailCacheDuration: 3600,
+    detailCacheDuration: 0,
     modules: [
         {
             title: "国产热播剧",
