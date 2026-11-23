@@ -1,0 +1,8 @@
+#!name=鲨鱼记账 5.89 适配 r1
+#!desc=会员详情与1012配置缓存适配；无上报，不改账本和购买接口。需开启HTTP/2 MitM。
+
+[MITM]
+hostname = %APPEND% api.shayujizhang.com
+
+[Script]
+shayu589r1 = type=http-response,pattern=^https:\/\/api\.shayujizhang\.com\/(account\/grant\/vip\/detail|gain\/grant\/pro\/cfg)\/(\?|$),requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/wfby2068/Forward-Widgets/main/shayu589-r1.js
